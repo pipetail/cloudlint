@@ -9,17 +9,19 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+// Result struct
 type Result struct {
 	Check []check.Check `json:"check"`
 }
 
+// Handle function
 func Handle() {
 
-	reportId := "awioavaovao"
-	outputReport := checkreportstarted.New(reportId)
+	reportID := "awioavaovao"
+	outputReport := checkreportstarted.New(reportID)
 
 	for _, val := range outputReport.Payload.Checks {
-		newmsg := check.New(reportId)
+		newmsg := check.New(reportID)
 
 		//newmsg.Payload.AWSAuth = rcvdEvent.Payload.AWSAuth
 

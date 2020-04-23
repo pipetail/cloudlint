@@ -12,6 +12,8 @@ func main() {
 
 	worker.Printhello()
 
+	worker.Handle()
+
 	// defer klog.Flush()
 
 	// baseName := filepath.Base(os.Args[0])

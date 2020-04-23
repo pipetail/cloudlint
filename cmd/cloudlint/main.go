@@ -30,8 +30,6 @@ var (
 )
 
 func init() {
-	cobra.OnInitialize(initConfig)
-
 	// root command
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.config/cloudlint.yaml)")
 	rootCmd.PersistentFlags().StringArrayVar(&analizeChecks, "checks", analizeChecksDefault, "list of checks you want to run agains infrastructure")
@@ -44,9 +42,6 @@ func init() {
 
 func main() {
 	rootCmd.Execute()
-}
-
-func initConfig() {
 }
 
 func analyze(cmd *cobra.Command, args []string) {

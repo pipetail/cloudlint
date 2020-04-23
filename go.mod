@@ -10,6 +10,7 @@ require (
 	github.com/aws/aws-lambda-go v1.13.3
 	github.com/aws/aws-sdk-go v1.28.9
 	github.com/evanphx/json-patch v4.5.0+incompatible // indirect
+	github.com/getlantern/deepcopy v0.0.0-20160317154340-7f45deb8130a // indirect
 	github.com/gobwas/glob v0.2.3 // indirect
 	github.com/gofrs/uuid v3.2.0+incompatible // indirect
 	github.com/golang/protobuf v1.4.0 // indirect
@@ -34,7 +35,7 @@ require (
 	k8s.io/client-go v11.0.0+incompatible // indirect
 )
 
-// replace github.com/pipetail/cloudlint/internal/pkg/check v0.0.0 => ./internal/pkg/check
+replace github.com/pipetail/cloudlint/internal/pkg/check v0.0.0 => ../../internal/pkg/check
 
 // replace github.com/pipetail/cloudlint/internal/pkg/checkcompleted v0.0.0 => ./internal/pkg/checkcompleted
 

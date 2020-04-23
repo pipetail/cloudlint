@@ -2,26 +2,22 @@ package worker
 
 import (
 	"fmt"
-	"log"
+	"strconv"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/costexplorer"
 	"github.com/aws/aws-sdk-go/service/costexplorer/costexploreriface"
+	"github.com/pipetail/cloudlint/internal/pkg/checkcompleted"
 )
 
-func checkIntegration() error {
+func checkIntegration() (*checkcompleted.Event, error) {
 	sess := session.Must(session.NewSession())
 	costExplorerSvc := costexplorer.New(sess)
-	_, err := checkIntegrationHandler(costExplorerSvc)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return checkIntegrationHandler(costExplorerSvc)
 }
 
-func checkIntegrationHandler(costExplorerScv costexploreriface.CostExplorerAPI) (*string, error) {
+func checkIntegrationHandler(costExplorerScv costexploreriface.CostExplorerAPI) (*checkcompleted.Event, error) {
 
 	costParams := &costexplorer.GetCostAndUsageInput{
 		Granularity: aws.String("MONTHLY"),
@@ -37,9 +33,16 @@ func checkIntegrationHandler(costExplorerScv costexploreriface.CostExplorerAPI) 
 		return nil, fmt.Errorf("GetCostAndUsage: %s", err)
 	}
 
-	log.Println(result)
+	sum := 0.0
+	for _, element := range result.ResultsByTime {
+		amount := *element.Total["UnblendedCost"].Amount
+		i, _ := strconv.ParseFloat(amount, 64)
+		sum += i
+	}
 
-	test := "bla"
+	output := checkcompleted.Event{
+		Name: "checkIntegration",
+	}
 
-	return &test, nil
+	return &output, nil
 }

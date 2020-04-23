@@ -48,24 +48,24 @@ func handler(ctx context.Context, message check.Event) (string, error) {
 		outputReport, err = billingInfo(message)
 	case check.GetChecks()[1].Type:
 		outputReport, err = dmsUnused(message)
-	// case check.GetChecks()[2].Type:
-	// 	outputReport, err = ebsunused(message)
-	// case check.GetChecks()[3].Type:
-	// 	outputReport, err = paidSupport(message)
-	// case check.GetChecks()[4].Type:
-	// 	outputReport, err = ebsSnapshotsOld(message)
-	// case check.GetChecks()[5].Type:
-	// 	outputReport, err = elbUnused(message)
-	// case check.GetChecks()[6].Type:
-	// 	outputReport, err = vpcendpoints(message)
-	// case check.GetChecks()[7].Type:
-	// 	outputReport, err = natgwunused(message)
-	// case check.GetChecks()[8].Type:
-	// 	outputReport, err = eipunused(message)
-	// case check.GetChecks()[9].Type:
-	// 	outputReport, err = amiOld(message)
-	// case check.GetChecks()[10].Type:
-	// 	outputReport, err = ebsopt(message)
+	case check.GetChecks()[2].Type:
+		outputReport, err = ebsunused(message)
+	case check.GetChecks()[3].Type:
+		outputReport, err = paidSupport(message)
+	case check.GetChecks()[4].Type:
+		outputReport, err = ebsSnapshotsOld(message)
+	case check.GetChecks()[5].Type:
+		outputReport, err = elbUnused(message)
+	case check.GetChecks()[6].Type:
+		outputReport, err = vpcendpoints(message)
+	case check.GetChecks()[7].Type:
+		outputReport, err = natgwunused(message)
+	case check.GetChecks()[8].Type:
+		outputReport, err = eipunused(message)
+	case check.GetChecks()[9].Type:
+		outputReport, err = amiOld(message)
+	case check.GetChecks()[10].Type:
+		outputReport, err = ebsopt(message)
 	default:
 		log.WithFields(log.Fields{
 			"err": err,

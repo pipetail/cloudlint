@@ -1,4 +1,4 @@
-module gitlab.com/enebro/aws-billing-optimizer/monorepo/lib/datalayer
+module github.com/pipetail/cloudlint/internal/pkg/datalayer
 
 go 1.12
 

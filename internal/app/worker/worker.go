@@ -46,8 +46,8 @@ func handler(ctx context.Context, message check.Event) (string, error) {
 	switch message.Payload.CheckType {
 	case check.GetChecks()[0].Type:
 		outputReport, err = billingInfo(message)
-	// case check.GetChecks()[1].Type:
-	// 	outputReport, err = dmsUnused(message)
+	case check.GetChecks()[1].Type:
+		outputReport, err = dmsUnused(message)
 	// case check.GetChecks()[2].Type:
 	// 	outputReport, err = ebsunused(message)
 	// case check.GetChecks()[3].Type:
@@ -75,10 +75,6 @@ func handler(ctx context.Context, message check.Event) (string, error) {
 		return "", err
 	}
 
-	log.WithFields(log.Fields{
-		"report": outputReport,
-	}).Info("sending CheckCompleted to SNS")
-
 	// send report to SNS
 	//err = sendReport(outputReport, "arn:aws:sns:eu-central-1:680177765279:result")
 	if err != nil {
@@ -87,7 +83,7 @@ func handler(ctx context.Context, message check.Event) (string, error) {
 
 	log.WithFields(log.Fields{
 		"report": outputReport,
-	}).Info("report sent to SNS result topic")
+	}).Info("report finished")
 
 	return "ok", nil
 

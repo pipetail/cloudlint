@@ -4,11 +4,26 @@ import (
 	"fmt"
 
 	"github.com/pipetail/cloudlint/internal/app/worker"
+	"github.com/spf13/cobra"
 )
 
-func main() {
+var (
+	cfgFile string
+	rootCmd = &cobra.Command{
+		Use:   "cloudlint",
+		Short: "",
+		Long:  "",
+	}
+)
 
-	fmt.Println("hello pipetail")
+func init() {
+	cobra.OnInitialize(initConfig)
+	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.config/cloudlint.yaml)")
+}
+
+func main() {
+	rootCmd.Execute()
+	fmt.Printf("hello pipetail: %s", cfgFile)
 
 	worker.Printhello()
 
@@ -20,4 +35,8 @@ func main() {
 
 	// err := velero.NewCommand(baseName).Execute()
 	// cmd.CheckError(err)
+}
+
+func initConfig() {
+
 }

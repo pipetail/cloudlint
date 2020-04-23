@@ -81,7 +81,7 @@ func ebsopt(event check.Event) (*checkcompleted.Event, error) {
 
 		log.WithFields(log.Fields{
 			"awsRegion": region,
-		}).Info("checking ebs_opt in aws region")
+		}).Debug("checking ebs_opt in aws region")
 
 		ec2Svc := ec2.New(sess, &aws.Config{Region: aws.String(region)})
 

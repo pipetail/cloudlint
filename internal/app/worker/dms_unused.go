@@ -101,6 +101,9 @@ func dmsUnused(event check.Event) (*checkcompleted.Event, error) {
 
 	// see https://godoc.org/github.com/aws/aws-sdk-go/service/ec2#Region
 	for _, region := range regions {
+		log.WithFields(log.Fields{
+			"awsRegion": region,
+		}).Debug("checking dms_unused in aws region")
 
 		//svc := databasemigrationservice.New(sess, &aws.Config{Credentials: creds, Region: aws.String(region)})
 		svc := databasemigrationservice.New(sess, &aws.Config{Region: aws.String(region)})

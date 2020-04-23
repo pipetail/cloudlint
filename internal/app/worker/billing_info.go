@@ -1,8 +1,6 @@
 package worker
 
 import (
-	"fmt"
-
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/pipetail/cloudlint/internal/pkg/check"
@@ -62,7 +60,7 @@ func billingInfo(event check.Event) (*checkcompleted.Event, error) {
 		amount := *element.Total["UnblendedCost"].Amount
 		i, _ := strconv.ParseFloat(amount, 64)
 		sum += i
-		fmt.Println("Total cost for last month", amount)
+		//fmt.Println("Total cost for last month", amount)
 	}
 
 	amountString := *cost.ResultsByTime[len(cost.ResultsByTime)-1].Total["UnblendedCost"].Amount

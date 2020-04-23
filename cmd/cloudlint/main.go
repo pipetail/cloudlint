@@ -23,7 +23,7 @@ func init() {
 
 func main() {
 	rootCmd.Execute()
-	fmt.Printf("hello pipetail: %s", cfgFile)
+	fmt.Printf("configfile: %s\n", cfgFile)
 
 	worker.Printhello()
 

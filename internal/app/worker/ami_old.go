@@ -110,7 +110,7 @@ func amiOld(event check.Event) (*checkcompleted.Event, error) {
 	for _, region := range regions {
 		log.WithFields(log.Fields{
 			"awsRegion": region,
-		}).Info("checking ami_old in aws region")
+		}).Debug("checking ami_old in aws region")
 
 		// create svc for the given region
 		ec2Svc := ec2.New(sess, &aws.Config{Region: aws.String(region)})

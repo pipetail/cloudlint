@@ -88,7 +88,7 @@ func eipunused(event check.Event) (*checkcompleted.Event, error) {
 
 		log.WithFields(log.Fields{
 			"awsRegion": region,
-		}).Info("checking eip_unused in aws region")
+		}).Debug("checking eip_unused in aws region")
 
 		ec2Svc := ec2.New(sess, &aws.Config{Region: aws.String(region)})
 

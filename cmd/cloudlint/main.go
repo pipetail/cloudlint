@@ -39,6 +39,5 @@ func initConfig() {
 }
 
 func analyze(cmd *cobra.Command, args []string) {
-	worker.Printhello()
 	worker.Handle()
 }

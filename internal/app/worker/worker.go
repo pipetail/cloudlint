@@ -2,7 +2,6 @@ package worker
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/pipetail/cloudlint/internal/pkg/check"
 	"github.com/pipetail/cloudlint/internal/pkg/checkcompleted"
@@ -10,8 +9,8 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func Printhello() {
-	fmt.Println("helloaaa")
+type Result struct {
+	Check []check.Check `json:"check"`
 }
 
 func Handle() {
@@ -27,13 +26,14 @@ func Handle() {
 		newmsg.Payload.CheckID = val.ID
 
 		newmsg.Payload.CheckType = val.Type
-		//msg, _ := json.Marshal(newmsg)
+
+		//go handler(nil, newmsg)
 		handler(nil, newmsg)
 	}
 
 }
 
-func handler(ctx context.Context, message check.Event) (string, error) {
+func handler(ctx context.Context, message check.Event) {
 
 	//message := check.Event{}
 
@@ -72,19 +72,18 @@ func handler(ctx context.Context, message check.Event) (string, error) {
 		}).Error("received new check request")
 	}
 	if err != nil {
-		return "", err
+		return
 	}
 
 	// send report to SNS
 	//err = sendReport(outputReport, "arn:aws:sns:eu-central-1:680177765279:result")
 	if err != nil {
-		return "", err
+		return
 	}
 
 	log.WithFields(log.Fields{
 		"report": outputReport,
 	}).Info("report finished")
 
-	return "ok", nil
-
+	return
 }

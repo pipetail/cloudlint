@@ -7,6 +7,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/service/costexplorer"
 	"github.com/aws/aws-sdk-go/service/costexplorer/costexploreriface"
+	"github.com/pipetail/cloudlint/internal/pkg/checkcompleted"
 )
 
 type CostExplorerMockClient struct {
@@ -59,9 +60,10 @@ func (client *CostExplorerMockClient) GetCostAndUsage(input *costexplorer.GetCos
 
 func TestCheckIntegrationHandler(t *testing.T) {
 	mockClient := CostExplorerMockClient{}
-	_, err := checkIntegrationHandler(&mockClient)
+	outputReport := checkcompleted.New("dummyID")
+	err := checkIntegrationHandler(&mockClient, &outputReport)
 
-	if err != nil {
-		t.Errorf("bla: %s", err)
+	if checkIntegrationHandler(&mockClient, &outputReport) != nil {
+		t.Errorf("could not verify integration status: %s", err)
 	}
 }

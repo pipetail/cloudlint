@@ -8,17 +8,24 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/costexplorer"
 	"github.com/aws/aws-sdk-go/service/costexplorer/costexploreriface"
+	"github.com/pipetail/cloudlint/internal/pkg/check"
 	"github.com/pipetail/cloudlint/internal/pkg/checkcompleted"
 )
 
-func checkIntegration() (*checkcompleted.Event, error) {
+func checkIntegration(event check.Event) (*checkcompleted.Event, error) {
+	// prepare output report
+	outputReport := checkcompleted.New(event.Payload.CheckID)
+	outputReport.Name = "checkIntegration"
+
 	sess := session.Must(session.NewSession())
 	costExplorerSvc := costexplorer.New(sess)
-	return checkIntegrationHandler(costExplorerSvc)
+	err := checkIntegrationHandler(costExplorerSvc, &outputReport)
+	return &outputReport, err
 }
 
-func checkIntegrationHandler(costExplorerScv costexploreriface.CostExplorerAPI) (*checkcompleted.Event, error) {
+func checkIntegrationHandler(costExplorerScv costexploreriface.CostExplorerAPI, event *checkcompleted.Event) error {
 
+	// create dummy query to costexplorer
 	costParams := &costexplorer.GetCostAndUsageInput{
 		Granularity: aws.String("MONTHLY"),
 		Metrics:     []*string{aws.String("UnblendedCost")},
@@ -30,7 +37,7 @@ func checkIntegrationHandler(costExplorerScv costexploreriface.CostExplorerAPI) 
 
 	result, err := costExplorerScv.GetCostAndUsage(costParams)
 	if err != nil {
-		return nil, fmt.Errorf("GetCostAndUsage: %s", err)
+		return fmt.Errorf("GetCostAndUsage: %s", err)
 	}
 
 	sum := 0.0
@@ -40,9 +47,8 @@ func checkIntegrationHandler(costExplorerScv costexploreriface.CostExplorerAPI) 
 		sum += i
 	}
 
-	output := checkcompleted.Event{
-		Name: "checkIntegration",
-	}
+	// adjust event if needed here
+	// event.Payload.Check...
 
-	return &output, nil
+	return nil
 }

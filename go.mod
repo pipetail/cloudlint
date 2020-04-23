@@ -28,7 +28,8 @@ require (
 	github.com/sirupsen/logrus v1.4.2
 	github.com/spf13/cobra v1.0.0 // indirect
 	github.com/vmware-tanzu/velero v1.3.2 // indirect
-	golang.org/x/tools v0.0.0-20200324053659-5c746ccfa245 // indirect
+	golang.org/x/lint v0.0.0-20200302205851-738671d3881b // indirect
+	golang.org/x/tools v0.0.0-20200422205258-72e4a01eba43 // indirect
 	google.golang.org/grpc v1.29.0 // indirect
 	k8s.io/apiextensions-apiserver v0.18.2 // indirect
 	k8s.io/cli-runtime v0.18.2 // indirect

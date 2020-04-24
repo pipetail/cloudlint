@@ -2,23 +2,23 @@ package worker
 
 import (
 	"context"
+	"os"
 
 	"github.com/pipetail/cloudlint/internal/pkg/check"
 	"github.com/pipetail/cloudlint/internal/pkg/checkcompleted"
 	"github.com/pipetail/cloudlint/internal/pkg/checkreportstarted"
 	log "github.com/sirupsen/logrus"
+
+	"github.com/jedib0t/go-pretty/table"
 )
 
-// Result struct
-type Result struct {
-	Check []check.Check `json:"check"`
-}
-
 // Handle function
-func Handle() {
+func Handle() check.Result {
 
 	reportID := "awioavaovao"
 	outputReport := checkreportstarted.New(reportID)
+
+	result := check.Result{}
 
 	for _, val := range outputReport.Payload.Checks {
 		newmsg := check.New(reportID)
@@ -30,12 +30,33 @@ func Handle() {
 		newmsg.Payload.CheckType = val.Type
 
 		//go handler(nil, newmsg)
-		handler(nil, newmsg)
+		res := handler(nil, newmsg)
+		result.CheckResult = append(result.CheckResult, res.Payload.Check)
+		result.CheckInfo = append(result.CheckInfo, val)
 	}
+
+	return result
+}
+
+func Print(res check.Result) {
+
+	t := table.NewWriter()
+	t.SetOutputMirror(os.Stdout)
+	t.AppendHeader(table.Row{"#", "Group", "Name", "Type", "Impact $", "Severity"})
+
+	totalImpact := 0
+	for i, result := range res.CheckResult {
+		//fmt.Printf("%s: %+v %+v\n", i, res.CheckInfo[i].ID, result)
+		t.AppendRow([]interface{}{res.CheckInfo[i].ID, res.CheckInfo[i].Group, res.CheckInfo[i].Name, res.CheckInfo[i].Type, result.Impact, checkcompleted.Severity(result.Severity)})
+		totalImpact += result.Impact
+	}
+
+	t.AppendFooter(table.Row{"", "", "", "Total", totalImpact})
+	t.Render()
 
 }
 
-func handler(ctx context.Context, message check.Event) {
+func handler(ctx context.Context, message check.Event) *checkcompleted.Event {
 
 	//message := check.Event{}
 
@@ -74,18 +95,12 @@ func handler(ctx context.Context, message check.Event) {
 		}).Error("received new check request")
 	}
 	if err != nil {
-		return
-	}
-
-	// send report to SNS
-	//err = sendReport(outputReport, "arn:aws:sns:eu-central-1:680177765279:result")
-	if err != nil {
-		return
+		return nil
 	}
 
 	log.WithFields(log.Fields{
 		"report": outputReport,
 	}).Info("report finished")
 
-	return
+	return outputReport
 }

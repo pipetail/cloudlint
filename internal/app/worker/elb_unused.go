@@ -3,6 +3,7 @@ package worker
 import (
 	"fmt"
 
+	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	elb "github.com/aws/aws-sdk-go/service/elbv2"
 	"github.com/pipetail/cloudlint/internal/pkg/check"
@@ -12,6 +13,10 @@ import (
 
 func elbUnused(event check.Event) (*checkcompleted.Event, error) {
 
+	log.WithFields(log.Fields{
+		"LoadBalancerArn": "",
+	}).Info("starting elb_unused check")
+
 	// prepare the empty report
 	outputReport := checkcompleted.New(event.Payload.CheckID)
 
@@ -20,10 +25,6 @@ func elbUnused(event check.Event) (*checkcompleted.Event, error) {
 
 	var notUsed int
 
-	// log.WithFields(log.Fields{
-	// 	"roleARN": roleARN,
-	// }).Info("checking with roleARN")
-
 	//Create new ELB client (v2!)
 	// authenticate to AWS
 	sess := session.Must(session.NewSession())
@@ -31,7 +32,7 @@ func elbUnused(event check.Event) (*checkcompleted.Event, error) {
 	// 	p.ExternalID = &externalID
 	// })
 
-	svc := elb.New(sess)
+	svc := elb.New(sess, &aws.Config{Region: aws.String("us-east-1")})
 	input := elb.DescribeLoadBalancersInput{}
 
 	res, err := svc.DescribeLoadBalancers(&input)

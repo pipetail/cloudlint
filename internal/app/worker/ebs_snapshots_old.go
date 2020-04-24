@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/aws/aws-sdk-go/service/sts"
@@ -15,6 +16,10 @@ import (
 func ebsSnapshotsOld(event check.Event) (*checkcompleted.Event, error) {
 	// prepare the empty report
 	outputReport := checkcompleted.New(event.Payload.CheckID)
+
+	log.WithFields(log.Fields{
+		"report": outputReport,
+	}).Info("starting ebs_snapshots_old")
 
 	// externalID := event.Payload.AWSAuth.ExternalID
 	// roleARN := event.Payload.AWSAuth.RoleARN
@@ -30,14 +35,19 @@ func ebsSnapshotsOld(event check.Event) (*checkcompleted.Event, error) {
 	// 	p.ExternalID = &externalID
 	// })
 
+	// TODO: add region support
+
 	// create AWS SDK clients
-	ec2Svc := ec2.New(sess)
+	ec2Svc := ec2.New(sess, &aws.Config{Region: aws.String("us-east-1")})
 	stsSvc := sts.New(sess)
 
 	// get account id
 	getCallerIdenityInput := sts.GetCallerIdentityInput{}
 	identity, err := stsSvc.GetCallerIdentity(&getCallerIdenityInput)
 	if err != nil {
+		log.WithFields(log.Fields{
+			"error": err,
+		}).Error("could not obtain sts info")
 		return nil, fmt.Errorf("could not obtain sts info: %s", err)
 	}
 
@@ -76,7 +86,7 @@ func ebsSnapshotsOld(event check.Event) (*checkcompleted.Event, error) {
 
 	log.WithFields(log.Fields{
 		"checkCompleted": outputReport,
-	}).Info("EBS unused check finished")
+	}).Info("EBS snapshots old check finished")
 
 	return &outputReport, nil
 }

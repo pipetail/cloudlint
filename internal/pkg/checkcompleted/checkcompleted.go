@@ -1,5 +1,7 @@
 package checkcompleted
 
+import "fmt"
+
 /*
 {
     "name": "CheckCompleted",
@@ -24,6 +26,19 @@ const (
 	ERROR                   // ERROR == 2
 )
 
+func (e Severity) String() string {
+	switch e {
+	case INFO:
+		return "INFO"
+	case WARNING:
+		return "WARNING"
+	case ERROR:
+		return "ERROR"
+	default:
+		return fmt.Sprintf("%d", int(e))
+	}
+}
+
 // Event checkcompleted event
 type Event struct {
 	Name    string  `json:"name"`
@@ -42,6 +57,7 @@ type Check struct {
 	Impact   int      `json:"impact"`
 }
 
+// TODO: delete this
 // New constructs a CheckCompleted event
 func New(id string) Event {
 	return Event{

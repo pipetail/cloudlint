@@ -2,6 +2,7 @@ package check
 
 import (
 	uuid "github.com/google/uuid"
+	"github.com/pipetail/cloudlint/internal/pkg/checkcompleted"
 	"github.com/pipetail/cloudlint/internal/pkg/checkreport"
 )
 
@@ -130,6 +131,13 @@ type Payload struct {
 	ReportID  string              `json:"reportId"`
 }
 
+// Result struct
+type Result struct {
+	CheckResult []checkcompleted.Check `json:"checkResult"`
+	CheckInfo   []Check                `json:"checkInfo"`
+}
+
+// TODO: delete this
 // New - constructor for creating CheckReport event
 func New(reportID string) Event {
 	return Event{

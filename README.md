@@ -1,6 +1,7 @@
 # cloudlint
 
 ```
-go build ./cmd/cloudlint/main.go
-./main
+make dep
+make build
+bin/cloudlint
 ```

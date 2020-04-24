@@ -8,7 +8,7 @@ import (
 
 var (
 	cfgFile       string   // path of cnfiguration file
-	analizeChecks []string // list of checks we want to execute
+	analyzeChecks []string // list of checks we want to execute
 	debug         bool     // indicates verbose output
 
 	// default values
@@ -32,7 +32,7 @@ var (
 func init() {
 	// root command
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.config/cloudlint.yaml)")
-	rootCmd.PersistentFlags().StringArrayVar(&analizeChecks, "checks", analyzeChecksDefault, "list of checks you want to run agains infrastructure")
+	rootCmd.PersistentFlags().StringArrayVar(&analyzeChecks, "checks", analyzeChecksDefault, "list of checks you want to run against infrastructure")
 	rootCmd.PersistentFlags().BoolVar(&debug, "debug", false, "verbose output")
 
 	// analyze command
@@ -45,10 +45,13 @@ func main() {
 }
 
 func analyze(cmd *cobra.Command, args []string) {
+
+	log.SetLevel(log.ErrorLevel)
 	if debug {
 		log.SetLevel(log.DebugLevel)
 	}
 
-	log.WithField("checks", analizeChecks).Debug("received list of checks")
-	worker.Handle()
+	log.WithField("checks", analyzeChecks).Debug("received list of checks")
+	result := worker.Handle()
+	worker.Print(result)
 }

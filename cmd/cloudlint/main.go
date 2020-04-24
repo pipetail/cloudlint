@@ -12,7 +12,7 @@ var (
 	debug         bool     // indicates verbose output
 
 	// default values
-	analizeChecksDefault = []string{"jedna", "dva"}
+	analyzeChecksDefault = []string{"jedna", "dva"}
 
 	// commands
 	rootCmd = &cobra.Command{
@@ -32,7 +32,7 @@ var (
 func init() {
 	// root command
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.config/cloudlint.yaml)")
-	rootCmd.PersistentFlags().StringArrayVar(&analizeChecks, "checks", analizeChecksDefault, "list of checks you want to run agains infrastructure")
+	rootCmd.PersistentFlags().StringArrayVar(&analizeChecks, "checks", analyzeChecksDefault, "list of checks you want to run agains infrastructure")
 	rootCmd.PersistentFlags().BoolVar(&debug, "debug", false, "verbose output")
 
 	// analyze command

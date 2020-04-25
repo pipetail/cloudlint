@@ -53,7 +53,7 @@ func paidSupport(event check.Event) (*checkcompleted.Event, error) {
 
 	log.WithFields(log.Fields{
 		"checkCompleted": outputReport,
-	}).Info("Paid support check finished")
+	}).Debug("Paid support check finished")
 
 	return &outputReport, nil
 }

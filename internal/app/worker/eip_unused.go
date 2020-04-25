@@ -95,10 +95,11 @@ func eipunused(event check.Event) (*checkcompleted.Event, error) {
 		addresses := getAddressesWithingRegion(ec2Svc)
 
 		// TODO: check if .nextToken is nil
+		eipCountWithinRegion := GetAddressesCount(addresses)
 		eipcount += GetAddressesCount(addresses)
 
 		// count the price
-		totalMonthlyPrice += float64(eipcount) * getAddressPriceInRegion(region) * (24 * 30)
+		totalMonthlyPrice += float64(eipCountWithinRegion) * getAddressPriceInRegion(region) * (24 * 30)
 	}
 
 	// TODO: make this relative to total spend

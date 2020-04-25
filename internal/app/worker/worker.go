@@ -1,8 +1,8 @@
 package worker
 
 import (
-	"context"
 	"os"
+	"sync"
 
 	"github.com/pipetail/cloudlint/internal/pkg/check"
 	"github.com/pipetail/cloudlint/internal/pkg/checkcompleted"
@@ -20,7 +20,14 @@ func Handle() check.Result {
 
 	result := check.Result{}
 
+	var wg sync.WaitGroup // create waitgroup (empty struct)
+
+	queue := make(chan checkcompleted.Check, len(outputReport.Payload.Checks))
+
 	for _, val := range outputReport.Payload.Checks {
+
+		wg.Add(1)
+
 		newmsg := check.New(reportID)
 
 		//newmsg.Payload.AWSAuth = rcvdEvent.Payload.AWSAuth
@@ -29,10 +36,24 @@ func Handle() check.Result {
 
 		newmsg.Payload.CheckType = val.Type
 
-		//go handler(nil, newmsg)
-		res := handler(nil, newmsg)
-		result.CheckResult = append(result.CheckResult, res.Payload.Check)
+		go concurrentHandler(newmsg, &wg, queue)
+		res := checkcompleted.Check{
+			ID:       val.ID,
+			Severity: 1,
+			Impact:   123,
+		}
+		//res := handler(newmsg)
+		result.CheckResult = append(result.CheckResult, res)
 		result.CheckInfo = append(result.CheckInfo, val)
+	}
+
+	wg.Wait() // blocks here
+
+	for i := range result.CheckResult {
+		item := <-queue
+		result.CheckResult[i].Impact = item.Impact
+		result.CheckResult[i].Severity = item.Severity
+		//fmt.Println("[main]: msg %v %v ", item, res)
 	}
 
 	return result
@@ -42,21 +63,34 @@ func Print(res check.Result) {
 
 	t := table.NewWriter()
 	t.SetOutputMirror(os.Stdout)
-	t.AppendHeader(table.Row{"#", "Group", "Name", "Type", "Impact $", "Severity"})
+	t.AppendHeader(table.Row{"#", "Group", "Name", "Impact $", "Severity"})
 
 	totalImpact := 0
 	for i, result := range res.CheckResult {
 		//fmt.Printf("%s: %+v %+v\n", i, res.CheckInfo[i].ID, result)
-		t.AppendRow([]interface{}{res.CheckInfo[i].ID, res.CheckInfo[i].Group, res.CheckInfo[i].Name, res.CheckInfo[i].Type, result.Impact, checkcompleted.Severity(result.Severity)})
+		t.AppendRow([]interface{}{res.CheckInfo[i].Type, res.CheckInfo[i].Group, res.CheckInfo[i].Name, result.Impact, checkcompleted.Severity(result.Severity)})
 		totalImpact += result.Impact
 	}
 
-	t.AppendFooter(table.Row{"", "", "", "Total", totalImpact})
+	t.AppendFooter(table.Row{"", "", "Total", totalImpact})
 	t.Render()
 
 }
 
-func handler(ctx context.Context, message check.Event) *checkcompleted.Event {
+func concurrentHandler(message check.Event, wg *sync.WaitGroup, c chan<- checkcompleted.Check) {
+
+	outputReport := handler(message)
+
+	c <- outputReport.Payload.Check
+
+	log.WithFields(log.Fields{
+		"report": outputReport,
+	}).Info("report finished")
+
+	wg.Done()
+}
+
+func handler(message check.Event) *checkcompleted.Event {
 
 	//message := check.Event{}
 

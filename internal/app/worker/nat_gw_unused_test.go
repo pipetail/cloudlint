@@ -8,7 +8,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/ec2"
 )
 
-func (m *mockEC2Client) DescribeEmptyNatGateways(*ec2.DescribeNatGatewaysInput) (*ec2.DescribeNatGatewaysOutput, error) {
+func (m *MockEC2Client) DescribeEmptyNatGateways(*ec2.DescribeNatGatewaysInput) (*ec2.DescribeNatGatewaysOutput, error) {
 	// mock response/functionality
 
 	// empty response
@@ -24,7 +24,7 @@ func (m *mockEC2Client) DescribeEmptyNatGateways(*ec2.DescribeNatGatewaysInput) 
 	//return nil, nil
 }
 
-func (m *mockEC2Client) DescribeNatGateways(*ec2.DescribeNatGatewaysInput) (*ec2.DescribeNatGatewaysOutput, error) {
+func (m *MockEC2Client) DescribeNatGateways(*ec2.DescribeNatGatewaysInput) (*ec2.DescribeNatGatewaysOutput, error) {
 	// mock response/functionality
 
 	// example payload from https://docs.aws.amazon.com/cli/latest/reference/ec2/describe-nat-gateways.html
@@ -89,7 +89,7 @@ func (m *mockEC2Client) DescribeNatGateways(*ec2.DescribeNatGatewaysInput) (*ec2
 
 func TestNatGatewayUnusedCount(t *testing.T) {
 
-	mockSvc := &mockEC2Client{}
+	mockSvc := &MockEC2Client{}
 
 	NatGatewayss, _ := mockSvc.DescribeNatGateways(nil)
 	emptyNatGatewayss, _ := mockSvc.DescribeEmptyNatGateways(nil)

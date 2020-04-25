@@ -9,17 +9,9 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/ec2"
-	"github.com/aws/aws-sdk-go/service/ec2/ec2iface"
 )
 
-// Define a mock struct to be used in your unit tests of myFunc.
-type mockEC2Client struct {
-	ec2iface.EC2API
-	//DescribeVolumesMethod func(*ec2.DescribeVolumesInput) (*ec2.DescribeVolumesOutput, error)
-	//aws.Config
-}
-
-func (m *mockEC2Client) DescribeVolumes2(*ec2.DescribeVolumesInput) (*ec2.DescribeVolumesOutput, error) {
+func (m *MockEC2Client) DescribeVolumes2(*ec2.DescribeVolumesInput) (*ec2.DescribeVolumesOutput, error) {
 	payload := `
 	{
 		"Volumes": [
@@ -67,7 +59,7 @@ func (m *mockEC2Client) DescribeVolumes2(*ec2.DescribeVolumesInput) (*ec2.Descri
 	return output, nil
 }
 
-func (m *mockEC2Client) DescribeVolumes(*ec2.DescribeVolumesInput) (*ec2.DescribeVolumesOutput, error) {
+func (m *MockEC2Client) DescribeVolumes(*ec2.DescribeVolumesInput) (*ec2.DescribeVolumesOutput, error) {
 	// mock response/functionality
 
 	volumeID := "vol-0244f4fb5eb3e997e"
@@ -164,7 +156,7 @@ func FloatEquals(a, b float64) bool {
 
 func TestFilterDetachedVolumes(t *testing.T) {
 
-	mockSvc := &mockEC2Client{}
+	mockSvc := &MockEC2Client{}
 
 	volumess, _ := mockSvc.DescribeVolumes(nil)
 	volumess2, _ := mockSvc.DescribeVolumes2(nil)
@@ -192,7 +184,7 @@ func TestFilterDetachedVolumes(t *testing.T) {
 
 func TestGetVolumesPrice(t *testing.T) {
 
-	mockSvc := &mockEC2Client{}
+	mockSvc := &MockEC2Client{}
 
 	volumess, _ := mockSvc.DescribeVolumes(nil)
 	volumess2, _ := mockSvc.DescribeVolumes2(nil)

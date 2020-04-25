@@ -8,7 +8,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/ec2"
 )
 
-func (m *mockEC2Client) DescribeEmptyAddresses(*ec2.DescribeAddressesInput) (*ec2.DescribeAddressesOutput, error) {
+func (m *MockEC2Client) DescribeEmptyAddresses(*ec2.DescribeAddressesInput) (*ec2.DescribeAddressesOutput, error) {
 	// mock response/functionality
 
 	payload := `
@@ -26,7 +26,7 @@ func (m *mockEC2Client) DescribeEmptyAddresses(*ec2.DescribeAddressesInput) (*ec
 	return output, nil
 }
 
-func (m *mockEC2Client) DescribeAddresses(*ec2.DescribeAddressesInput) (*ec2.DescribeAddressesOutput, error) {
+func (m *MockEC2Client) DescribeAddresses(*ec2.DescribeAddressesInput) (*ec2.DescribeAddressesOutput, error) {
 	// mock response/functionality
 
 	payload := `
@@ -68,7 +68,7 @@ func (m *mockEC2Client) DescribeAddresses(*ec2.DescribeAddressesInput) (*ec2.Des
 
 func TestGetAddressesCount(t *testing.T) {
 
-	mockSvc := &mockEC2Client{}
+	mockSvc := &MockEC2Client{}
 
 	Addressess, _ := mockSvc.DescribeAddresses(nil)
 	emptyAddressess, _ := mockSvc.DescribeEmptyAddresses(nil)

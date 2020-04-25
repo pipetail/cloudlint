@@ -51,3 +51,5 @@ replace github.com/pipetail/cloudlint/internal/pkg/check v0.0.0 => ../../interna
 // replace github.com/pipetail/cloudlint/internal/pkg/awsregions v0.0.0 => ./internal/pkg/awsregions
 
 replace github.com/pipetail/cloudlint/internal/app/worker v0.0.0 => ../../internal/app/worker
+
+replace github.com/pipetail/cloudlint/internal/pkg/aws v0.0.0 => ../../internal/pkg/aws

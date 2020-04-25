@@ -6,16 +6,9 @@ import (
 	"testing"
 
 	"github.com/aws/aws-sdk-go/service/databasemigrationservice"
-	"github.com/aws/aws-sdk-go/service/databasemigrationservice/databasemigrationserviceiface"
 )
 
-type mockDMSClient struct {
-	databasemigrationserviceiface.DatabaseMigrationServiceAPI
-	//DescribeVolumesMethod func(*ec2.DescribeVolumesInput) (*ec2.DescribeVolumesOutput, error)
-	//aws.Config
-}
-
-func (m *mockDMSClient) DescribeEmptyDMS(*databasemigrationservice.DescribeReplicationInstancesInput) (*databasemigrationservice.DescribeReplicationInstancesOutput, error) {
+func (m *MockDMSClient) DescribeEmptyDMS(*databasemigrationservice.DescribeReplicationInstancesInput) (*databasemigrationservice.DescribeReplicationInstancesOutput, error) {
 	// mock response/functionality
 
 	// empty response
@@ -34,7 +27,7 @@ func (m *mockDMSClient) DescribeEmptyDMS(*databasemigrationservice.DescribeRepli
 	return output, nil
 }
 
-func (m *mockDMSClient) DescribeDMS(*databasemigrationservice.DescribeReplicationInstancesInput) (*databasemigrationservice.DescribeReplicationInstancesOutput, error) {
+func (m *MockDMSClient) DescribeDMS(*databasemigrationservice.DescribeReplicationInstancesInput) (*databasemigrationservice.DescribeReplicationInstancesOutput, error) {
 	// mock response/functionality
 
 	// example payload from https://docs.aws.amazon.com/dms/latest/APIReference/API_DescribeReplicationInstances.html
@@ -106,7 +99,7 @@ func (m *mockDMSClient) DescribeDMS(*databasemigrationservice.DescribeReplicatio
 
 func TestGetDmsStoragePriceInRegion(t *testing.T) {
 
-	mockSvc := &mockDMSClient{}
+	mockSvc := &MockDMSClient{}
 
 	DMSs, _ := mockSvc.DescribeDMS(nil)
 	emptyDMSs, _ := mockSvc.DescribeEmptyDMS(nil)

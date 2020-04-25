@@ -7,7 +7,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/ec2"
 )
 
-func (m *mockEC2Client) DescribeImages(*ec2.DescribeImagesInput) (*ec2.DescribeImagesOutput, error) {
+func (m *MockEC2Client) DescribeImages(*ec2.DescribeImagesInput) (*ec2.DescribeImagesOutput, error) {
 	payload := `{
 		"Images": [
 			{
@@ -504,7 +504,7 @@ func (m *mockEC2Client) DescribeImages(*ec2.DescribeImagesInput) (*ec2.DescribeI
 }
 
 func TestAmisUnusedCount(t *testing.T) {
-	mockSvc := &mockEC2Client{}
+	mockSvc := &MockEC2Client{}
 	_, _ = mockSvc.DescribeImages(nil)
 	//tbd
 }

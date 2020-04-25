@@ -8,7 +8,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/ec2"
 )
 
-func (m *mockEC2Client) DescribeEmptyVpcEndpoints(*ec2.DescribeVpcEndpointsInput) (*ec2.DescribeVpcEndpointsOutput, error) {
+func (m *MockEC2Client) DescribeEmptyVpcEndpoints(*ec2.DescribeVpcEndpointsInput) (*ec2.DescribeVpcEndpointsOutput, error) {
 	// mock response/functionality
 
 	// empty response
@@ -24,7 +24,7 @@ func (m *mockEC2Client) DescribeEmptyVpcEndpoints(*ec2.DescribeVpcEndpointsInput
 	//return nil, nil
 }
 
-func (m *mockEC2Client) DescribeVpcEndpointsDocs(*ec2.DescribeVpcEndpointsInput) (*ec2.DescribeVpcEndpointsOutput, error) {
+func (m *MockEC2Client) DescribeVpcEndpointsDocs(*ec2.DescribeVpcEndpointsInput) (*ec2.DescribeVpcEndpointsOutput, error) {
 
 	payload := `
 {
@@ -99,7 +99,7 @@ func (m *mockEC2Client) DescribeVpcEndpointsDocs(*ec2.DescribeVpcEndpointsInput)
 	return vpcEndpointsOutput, nil
 }
 
-func (m *mockEC2Client) DescribeVpcEndpoints(*ec2.DescribeVpcEndpointsInput) (*ec2.DescribeVpcEndpointsOutput, error) {
+func (m *MockEC2Client) DescribeVpcEndpoints(*ec2.DescribeVpcEndpointsInput) (*ec2.DescribeVpcEndpointsOutput, error) {
 	// mock response/functionality
 
 	payload := `
@@ -139,7 +139,7 @@ func (m *mockEC2Client) DescribeVpcEndpoints(*ec2.DescribeVpcEndpointsInput) (*e
 
 func TestGetS3VpcEndpointsCount(t *testing.T) {
 
-	mockSvc := &mockEC2Client{}
+	mockSvc := &MockEC2Client{}
 
 	vpcEndpointss, _ := mockSvc.DescribeVpcEndpoints(nil)
 	vpcEndpointssDocs, _ := mockSvc.DescribeVpcEndpointsDocs(nil)

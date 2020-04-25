@@ -10,7 +10,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func getDmsWithingRegion(client *databasemigrationservice.DatabaseMigrationService) []*databasemigrationservice.ReplicationInstance {
+func getDmsWithinRegion(client *databasemigrationservice.DatabaseMigrationService) []*databasemigrationservice.ReplicationInstance {
 
 	params := &databasemigrationservice.DescribeReplicationInstancesInput{
 		Filters:    []*databasemigrationservice.Filter{},
@@ -108,7 +108,7 @@ func dmsUnused(event check.Event) (*checkcompleted.Event, error) {
 		//svc := databasemigrationservice.New(sess, &aws.Config{Credentials: creds, Region: aws.String(region)})
 		svc := databasemigrationservice.New(sess, &aws.Config{Region: aws.String(region)})
 
-		instances := getDmsWithingRegion(svc)
+		instances := getDmsWithinRegion(svc)
 
 		for _, instance := range instances {
 

@@ -59,6 +59,7 @@ func Handle() check.Result {
 	return result
 }
 
+// Print prints the report in a pretty table output
 func Print(res check.Result) {
 
 	t := table.NewWriter()

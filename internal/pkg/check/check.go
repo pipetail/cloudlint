@@ -137,7 +137,6 @@ type Result struct {
 	CheckInfo   []Check                `json:"checkInfo"`
 }
 
-// TODO: delete this
 // New - constructor for creating CheckReport event
 func New(reportID string) Event {
 	return Event{

@@ -57,7 +57,6 @@ type Check struct {
 	Impact   int      `json:"impact"`
 }
 
-// TODO: delete this
 // New constructs a CheckCompleted event
 func New(id string) Event {
 	return Event{

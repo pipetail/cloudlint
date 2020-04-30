@@ -4,6 +4,7 @@ import (
 	"os"
 	"sync"
 
+	"github.com/google/uuid"
 	"github.com/pipetail/cloudlint/internal/pkg/check"
 	"github.com/pipetail/cloudlint/internal/pkg/checkcompleted"
 	"github.com/pipetail/cloudlint/internal/pkg/checkreportstarted"
@@ -15,7 +16,7 @@ import (
 // Handle function
 func Handle() check.Result {
 
-	reportID := "awioavaovao"
+	reportID := uuid.New().String()
 	outputReport := checkreportstarted.New(reportID)
 
 	result := check.Result{}

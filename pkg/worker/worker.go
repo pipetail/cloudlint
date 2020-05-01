@@ -81,7 +81,7 @@ func Print(res check.Result) {
 
 func concurrentHandler(message check.Event, wg *sync.WaitGroup, c chan<- checkcompleted.Check) {
 
-	outputReport := handler(message)
+	outputReport := Handler(message)
 
 	c <- outputReport.Payload.Check
 

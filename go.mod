@@ -7,7 +7,7 @@ require (
 	github.com/Azure/go-autorest/autorest v0.10.0 // indirect
 	github.com/Azure/go-autorest/autorest/adal v0.8.3 // indirect
 	github.com/Azure/go-autorest/autorest/validation v0.2.0 // indirect
-	github.com/aws/aws-lambda-go v1.13.3
+	github.com/aws/aws-lambda-go v1.13.3 // indirect
 	github.com/aws/aws-sdk-go v1.30.13
 	github.com/evanphx/json-patch v4.5.0+incompatible // indirect
 	github.com/getlantern/deepcopy v0.0.0-20160317154340-7f45deb8130a // indirect
@@ -36,20 +36,8 @@ require (
 	k8s.io/client-go v11.0.0+incompatible // indirect
 )
 
-replace github.com/pipetail/cloudlint/internal/pkg/check v0.0.0 => ../../internal/pkg/check
+replace github.com/pipetail/cloudlint/pkg/check v0.0.0 => ../pkg/check
 
-// replace github.com/pipetail/cloudlint/internal/pkg/checkcompleted v0.0.0 => ./internal/pkg/checkcompleted
+replace github.com/pipetail/cloudlint/internal/app/worker v0.0.0 => ../internal/app/worker
 
-// replace github.com/pipetail/cloudlint/internal/pkg/checkreportstarted v0.0.0 => ./internal/pkg/checkreportstarted
-
-// replace github.com/pipetail/cloudlint/internal/pkg/checkreport v0.0.0 => ./internal/pkg/checkreport
-
-// replace github.com/pipetail/cloudlint/internal/pkg/checkawsintegration v0.0.0 => ./internal/pkg/checkawsintegration
-
-// replace github.com/pipetail/cloudlint/internal/pkg/checkawsintegrationcompleted v0.0.0 => ./internal/pkg/checkawsintegrationcompleted
-
-// replace github.com/pipetail/cloudlint/internal/pkg/awsregions v0.0.0 => ./internal/pkg/awsregions
-
-replace github.com/pipetail/cloudlint/internal/app/worker v0.0.0 => ../../internal/app/worker
-
-replace github.com/pipetail/cloudlint/internal/pkg/aws v0.0.0 => ../../internal/pkg/aws
+replace github.com/pipetail/cloudlint/pkg/aws v0.0.0 => ../pkg/aws

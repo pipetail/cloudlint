@@ -6,8 +6,8 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	elb "github.com/aws/aws-sdk-go/service/elbv2"
-	"github.com/pipetail/cloudlint/internal/pkg/check"
-	"github.com/pipetail/cloudlint/internal/pkg/checkcompleted"
+	"github.com/pipetail/cloudlint/pkg/check"
+	"github.com/pipetail/cloudlint/pkg/checkcompleted"
 	log "github.com/sirupsen/logrus"
 )
 

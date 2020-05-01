@@ -2,8 +2,8 @@ package check
 
 import (
 	uuid "github.com/google/uuid"
-	"github.com/pipetail/cloudlint/internal/pkg/checkcompleted"
-	"github.com/pipetail/cloudlint/internal/pkg/checkreport"
+	"github.com/pipetail/cloudlint/pkg/checkcompleted"
+	"github.com/pipetail/cloudlint/pkg/checkreport"
 )
 
 /*

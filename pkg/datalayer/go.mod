@@ -1,4 +1,4 @@
-module github.com/pipetail/cloudlint/internal/pkg/datalayer
+module github.com/pipetail/cloudlint/pkg/datalayer
 
 go 1.12
 

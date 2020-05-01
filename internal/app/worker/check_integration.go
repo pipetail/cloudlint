@@ -8,8 +8,8 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/costexplorer"
 	"github.com/aws/aws-sdk-go/service/costexplorer/costexploreriface"
-	"github.com/pipetail/cloudlint/internal/pkg/check"
-	"github.com/pipetail/cloudlint/internal/pkg/checkcompleted"
+	"github.com/pipetail/cloudlint/pkg/check"
+	"github.com/pipetail/cloudlint/pkg/checkcompleted"
 )
 
 func checkIntegration(event check.Event) (*checkcompleted.Event, error) {

@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/pipetail/cloudlint/internal/app/worker"
+	"github.com/pipetail/cloudlint/pkg/worker"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )

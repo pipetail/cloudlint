@@ -92,7 +92,8 @@ func concurrentHandler(message check.Event, wg *sync.WaitGroup, c chan<- checkco
 	wg.Done()
 }
 
-func handler(message check.Event) *checkcompleted.Event {
+// Handler handles the one incoming check and returns the result
+func Handler(message check.Event) *checkcompleted.Event {
 
 	//message := check.Event{}
 

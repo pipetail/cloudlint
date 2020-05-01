@@ -5,9 +5,9 @@ import (
 	"sync"
 
 	"github.com/google/uuid"
-	"github.com/pipetail/cloudlint/internal/pkg/check"
-	"github.com/pipetail/cloudlint/internal/pkg/checkcompleted"
-	"github.com/pipetail/cloudlint/internal/pkg/checkreportstarted"
+	"github.com/pipetail/cloudlint/pkg/check"
+	"github.com/pipetail/cloudlint/pkg/checkcompleted"
+	"github.com/pipetail/cloudlint/pkg/checkreportstarted"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/jedib0t/go-pretty/table"

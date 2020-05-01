@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/aws/aws-sdk-go/service/costexplorer"
-	"github.com/pipetail/cloudlint/internal/pkg/checkcompleted"
+	"github.com/pipetail/cloudlint/pkg/checkcompleted"
 )
 
 func (client *CostExplorerMockClient) GetCostAndUsage(input *costexplorer.GetCostAndUsageInput) (*costexplorer.GetCostAndUsageOutput, error) {

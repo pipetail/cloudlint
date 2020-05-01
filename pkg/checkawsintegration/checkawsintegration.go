@@ -1,6 +1,6 @@
 package checkawsintegration
 
-import "github.com/pipetail/cloudlint/internal/pkg/checkreport"
+import "github.com/pipetail/cloudlint/pkg/checkreport"
 
 /*
 {

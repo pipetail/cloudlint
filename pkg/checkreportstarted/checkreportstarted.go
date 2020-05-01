@@ -1,6 +1,6 @@
 package checkreportstarted
 
-import "github.com/pipetail/cloudlint/internal/pkg/check"
+import "github.com/pipetail/cloudlint/pkg/check"
 
 /*
 {

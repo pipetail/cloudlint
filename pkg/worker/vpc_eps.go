@@ -4,7 +4,6 @@ import (
 	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/pipetail/cloudlint/pkg/awsregions"
 	"github.com/pipetail/cloudlint/pkg/check"
@@ -16,7 +15,7 @@ func getVpcEndpointsWithinRegion(ec2client *ec2.EC2) []*ec2.VpcEndpoint {
 
 	epsParams := &ec2.DescribeVpcEndpointsInput{
 		Filters: []*ec2.Filter{
-			&ec2.Filter{
+			{
 				Name: aws.String("attachment.status"),
 				Values: []*string{
 					aws.String("detached"),
@@ -61,8 +60,7 @@ func vpcendpoints(event check.Event) (*checkcompleted.Event, error) {
 	// prepare the empty report
 	outputReport := checkcompleted.New(event.Payload.CheckID)
 
-	// externalID := event.Payload.AWSAuth.ExternalID
-	// roleARN := event.Payload.AWSAuth.RoleARN
+	auth := event.Payload.AWSAuth
 
 	s3endpointscount := 0
 
@@ -73,12 +71,6 @@ func vpcendpoints(event check.Event) (*checkcompleted.Event, error) {
 	//var countDisks int64 = 0
 	var totalMonthlyPrice float64 = 0
 
-	// authenticate to AWS
-	sess := session.Must(session.NewSession())
-	// creds := stscreds.NewCredentials(sess, roleARN, func(p *stscreds.AssumeRoleProvider) {
-	// 	p.ExternalID = &externalID
-	// })
-
 	regions := awsregions.GetRegions()
 
 	// see https://godoc.org/github.com/aws/aws-sdk-go/service/ec2#Region
@@ -88,12 +80,11 @@ func vpcendpoints(event check.Event) (*checkcompleted.Event, error) {
 			"awsRegion": region,
 		}).Debug("checking ebs_unused in aws region")
 
-		ec2Svc := ec2.New(sess, &aws.Config{Region: aws.String(region)})
+		ec2Svc := NewEC2Client(auth, region)
 
 		vpcendpoints := getVpcEndpointsWithinRegion(ec2Svc)
 
 		// TODO: check if volumes.nextToken is nil
-		// let's assume that each missing vpc endpoint costs 100$
 		s3endpointscount += GetS3VpcEndpointsCount(vpcendpoints)
 	}
 
@@ -101,7 +92,7 @@ func vpcendpoints(event check.Event) (*checkcompleted.Event, error) {
 	severity := checkcompleted.INFO
 	if s3endpointscount == 0 {
 		severity = checkcompleted.WARNING
-		totalMonthlyPrice = 100.0
+		totalMonthlyPrice = 0
 	}
 
 	// set check details
@@ -113,5 +104,4 @@ func vpcendpoints(event check.Event) (*checkcompleted.Event, error) {
 	}).Info("vpc_eps_notused check finished")
 
 	return &outputReport, nil
-
 }

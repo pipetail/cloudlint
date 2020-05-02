@@ -2,7 +2,6 @@ package worker
 
 import (
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/pipetail/cloudlint/pkg/awsregions"
 	"github.com/pipetail/cloudlint/pkg/check"
@@ -23,7 +22,7 @@ func getNatGatewaysWithinRegion(ec2client *ec2.EC2) []*ec2.NatGateway {
 	// https://docs.aws.amazon.com/vpc/latest/userguide/vpc-nat-gateway-cloudwatch.html
 	epsParams := &ec2.DescribeNatGatewaysInput{
 		Filter: []*ec2.Filter{
-			&ec2.Filter{
+			{
 				Name: aws.String("status"),
 				Values: []*string{
 					aws.String("available"),
@@ -83,8 +82,7 @@ func natgwunused(event check.Event) (*checkcompleted.Event, error) {
 	// prepare the empty report
 	outputReport := checkcompleted.New(event.Payload.CheckID)
 
-	// externalID := event.Payload.AWSAuth.ExternalID
-	// roleARN := event.Payload.AWSAuth.RoleARN
+	auth := event.Payload.AWSAuth
 
 	natgwscount := 0
 
@@ -95,12 +93,6 @@ func natgwunused(event check.Event) (*checkcompleted.Event, error) {
 	//var countDisks int64 = 0
 	var totalMonthlyPrice float64 = 0
 
-	// authenticate to AWS
-	sess := session.Must(session.NewSession())
-	// creds := stscreds.NewCredentials(sess, roleARN, func(p *stscreds.AssumeRoleProvider) {
-	// 	p.ExternalID = &externalID
-	// })
-
 	regions := awsregions.GetRegions()
 
 	// see https://godoc.org/github.com/aws/aws-sdk-go/service/ec2#Region
@@ -110,7 +102,7 @@ func natgwunused(event check.Event) (*checkcompleted.Event, error) {
 			"awsRegion": region,
 		}).Debug("checking ebs_unused in aws region")
 
-		ec2Svc := ec2.New(sess, &aws.Config{Region: aws.String(region)})
+		ec2Svc := NewEC2Client(auth, region)
 
 		natgateways := getNatGatewaysWithinRegion(ec2Svc)
 

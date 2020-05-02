@@ -1,8 +1,6 @@
 package worker
 
 import (
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/pipetail/cloudlint/pkg/awsregions"
 	"github.com/pipetail/cloudlint/pkg/check"
@@ -63,8 +61,7 @@ func eipunused(event check.Event) (*checkcompleted.Event, error) {
 	// prepare the empty report
 	outputReport := checkcompleted.New(event.Payload.CheckID)
 
-	// externalID := event.Payload.AWSAuth.ExternalID
-	// roleARN := event.Payload.AWSAuth.RoleARN
+	auth := event.Payload.AWSAuth
 
 	eipcount := 0
 
@@ -75,12 +72,6 @@ func eipunused(event check.Event) (*checkcompleted.Event, error) {
 	//var countDisks int64 = 0
 	var totalMonthlyPrice float64 = 0
 
-	// authenticate to AWS
-	sess := session.Must(session.NewSession())
-	// creds := stscreds.NewCredentials(sess, roleARN, func(p *stscreds.AssumeRoleProvider) {
-	// 	p.ExternalID = &externalID
-	// })
-
 	regions := awsregions.GetRegions()
 
 	// see https://godoc.org/github.com/aws/aws-sdk-go/service/ec2#Region
@@ -90,7 +81,7 @@ func eipunused(event check.Event) (*checkcompleted.Event, error) {
 			"awsRegion": region,
 		}).Debug("checking eip_unused in aws region")
 
-		ec2Svc := ec2.New(sess, &aws.Config{Region: aws.String(region)})
+		ec2Svc := NewEC2Client(auth, region)
 
 		addresses := getAddressesWithingRegion(ec2Svc)
 

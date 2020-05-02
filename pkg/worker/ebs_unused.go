@@ -1,7 +1,6 @@
 package worker
 
 import (
-	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ec2"
@@ -18,7 +17,7 @@ type Parameters struct {
 	region      *string
 }
 
-// GetVolumesPrice fuck your mom
+// GetVolumesPrice sums the final price for all the volumes
 func GetVolumesPrice(volumes []*ec2.Volume) float64 {
 
 	var totalSize int64 = 0
@@ -51,9 +50,6 @@ func GetVolumesPrice(volumes []*ec2.Volume) float64 {
 
 func getVolumesWithinRegion(ec2client *ec2.EC2) []*ec2.Volume {
 
-	// Create new EC2 client
-	//ec2Svc := ec2.New(prm.sess, &aws.Config{Credentials: prm.creds, Region: prm.region})
-
 	volumeParams := &ec2.DescribeVolumesInput{}
 
 	// Call to get detailed information on each volume
@@ -83,17 +79,10 @@ func ebsunused(event check.Event) (*checkcompleted.Event, error) {
 	// prepare the empty report
 	outputReport := checkcompleted.New(event.Payload.CheckID)
 
-	// externalID := event.Payload.AWSAuth.ExternalID
-	// roleARN := event.Payload.AWSAuth.RoleARN
+	auth := event.Payload.AWSAuth
 
 	//var countDisks int64 = 0
 	var totalMonthlyPrice float64 = 0
-
-	// authenticate to AWS
-	sess := session.Must(session.NewSession())
-	// creds := stscreds.NewCredentials(sess, roleARN, func(p *stscreds.AssumeRoleProvider) {
-	// 	p.ExternalID = &externalID
-	// })
 
 	regions := awsregions.GetRegions()
 
@@ -104,7 +93,7 @@ func ebsunused(event check.Event) (*checkcompleted.Event, error) {
 			"awsRegion": region,
 		}).Debug("checking ebs_unused in aws region")
 
-		ec2Svc := ec2.New(sess, &aws.Config{Region: aws.String(region)})
+		ec2Svc := NewEC2Client(auth, region)
 
 		volumes := getVolumesWithinRegion(ec2Svc)
 

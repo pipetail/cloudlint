@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/aws/aws-sdk-go/service/sts"
+	"github.com/pipetail/cloudlint/pkg/awsregions"
 	"github.com/pipetail/cloudlint/pkg/check"
 	"github.com/pipetail/cloudlint/pkg/checkcompleted"
 	log "github.com/sirupsen/logrus"
@@ -21,59 +21,53 @@ func ebsSnapshotsOld(event check.Event) (*checkcompleted.Event, error) {
 		"report": outputReport,
 	}).Info("starting ebs_snapshots_old")
 
-	// externalID := event.Payload.AWSAuth.ExternalID
-	// roleARN := event.Payload.AWSAuth.RoleARN
+	auth := event.Payload.AWSAuth
 	var impact float64
 
-	// log.WithFields(log.Fields{
-	// 	"roleARN": roleARN,
-	// }).Info("checking with roleARN")
+	regions := awsregions.GetRegions()
 
-	// authenticate to AWS
-	sess := session.Must(session.NewSession())
-	// creds := stscreds.NewCredentials(sess, roleARN, func(p *stscreds.AssumeRoleProvider) {
-	// 	p.ExternalID = &externalID
-	// })
+	// see https://godoc.org/github.com/aws/aws-sdk-go/service/ec2#Region
+	for _, region := range regions {
 
-	// TODO: add region support
+		// create AWS SDK clients
+		ec2Svc := NewEC2Client(auth, region)
+		stsSvc := sts.New(session.New())
 
-	// create AWS SDK clients
-	ec2Svc := ec2.New(sess, &aws.Config{Region: aws.String("us-east-1")})
-	stsSvc := sts.New(sess)
-
-	// get account id
-	getCallerIdenityInput := sts.GetCallerIdentityInput{}
-	identity, err := stsSvc.GetCallerIdentity(&getCallerIdenityInput)
-	if err != nil {
-		log.WithFields(log.Fields{
-			"error": err,
-		}).Error("could not obtain sts info")
-		return nil, fmt.Errorf("could not obtain sts info: %s", err)
-	}
-
-	// list all snapshots for the given owners
-	describeSnapshotInput := ec2.DescribeSnapshotsInput{
-		OwnerIds: []*string{identity.Account},
-	}
-	snapshots, err := ec2Svc.DescribeSnapshots(&describeSnapshotInput)
-	if err != nil {
-		return nil, fmt.Errorf("could not obtain snapshots: %s", err)
-	}
-
-	totalSize := int64(0)
-	for _, snapshot := range snapshots.Snapshots {
-		log.WithFields(log.Fields{
-			"SnapshotId": *snapshot.SnapshotId,
-		}).Info("found snapshot")
-
-		// older than 24 hours?
-		if time.Now().Sub(*snapshot.StartTime).Hours() > 90*24 {
-			totalSize = totalSize + *snapshot.VolumeSize
+		// get account id
+		getCallerIdenityInput := sts.GetCallerIdentityInput{}
+		identity, err := stsSvc.GetCallerIdentity(&getCallerIdenityInput)
+		if err != nil {
+			log.WithFields(log.Fields{
+				"error": err,
+			}).Error("could not obtain sts info")
+			return nil, fmt.Errorf("could not obtain sts info: %s", err)
 		}
-	}
 
-	// https://aws.amazon.com/ebs/pricing/ Frankfurt
-	impact = float64(totalSize) * float64(0.054)
+		// list all snapshots for the given owners
+		describeSnapshotInput := ec2.DescribeSnapshotsInput{
+			OwnerIds: []*string{identity.Account},
+		}
+		snapshots, err := ec2Svc.DescribeSnapshots(&describeSnapshotInput)
+		if err != nil {
+			return nil, fmt.Errorf("could not obtain snapshots: %s", err)
+		}
+
+		totalSize := int64(0)
+		for _, snapshot := range snapshots.Snapshots {
+			log.WithFields(log.Fields{
+				"SnapshotId": *snapshot.SnapshotId,
+			}).Info("found snapshot")
+
+			// older than 24 hours?
+			if time.Now().Sub(*snapshot.StartTime).Hours() > 90*24 {
+				totalSize = totalSize + *snapshot.VolumeSize
+			}
+		}
+
+		// https://aws.amazon.com/ebs/pricing/ Frankfurt
+		impact += float64(totalSize) * float64(0.054)
+
+	}
 
 	// set severity based on total size of snapshots
 	severity := checkcompleted.INFO

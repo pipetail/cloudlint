@@ -111,7 +111,7 @@ func TestGetDmsStoragePriceInRegion(t *testing.T) {
 		x []*databasemigrationservice.ReplicationInstance
 		y int
 	}{
-		{DMS, 828},
+		{DMS, 1},
 		{emptyDMS, 0},
 	}
 

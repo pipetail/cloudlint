@@ -9,6 +9,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/databasemigrationservice"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	elb "github.com/aws/aws-sdk-go/service/elbv2"
+	"github.com/aws/aws-sdk-go/service/support"
 	"github.com/pipetail/cloudlint/pkg/checkreport"
 )
 
@@ -119,4 +120,32 @@ func NewCEClient(auth checkreport.AwsAuth) *costexplorer.CostExplorer {
 	ceSvc := costexplorer.New(sess, config)
 
 	return ceSvc
+}
+
+// NewSupportClient constructs a new support client with credentials and session
+func NewSupportClient(auth checkreport.AwsAuth) *support.Support {
+
+	region := endpoints.UsEast1RegionID
+	externalID := auth.ExternalID
+	roleARN := auth.RoleARN
+
+	sess := session.Must(session.NewSession())
+
+	config := aws.NewConfig()
+
+	if region != "" {
+		config = config.WithRegion(region)
+	}
+
+	if (externalID != "") && (roleARN != "") {
+		creds := stscreds.NewCredentials(sess, roleARN, func(p *stscreds.AssumeRoleProvider) {
+			p.ExternalID = &externalID
+		})
+
+		config = config.WithCredentials(creds)
+	}
+
+	svc := support.New(sess, config)
+
+	return svc
 }

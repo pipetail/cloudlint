@@ -3,9 +3,6 @@ package worker
 import (
 	"strings"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/endpoints"
-	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/support"
 	"github.com/pipetail/cloudlint/pkg/check"
 	"github.com/pipetail/cloudlint/pkg/checkcompleted"
@@ -16,8 +13,7 @@ func paidSupport(event check.Event) (*checkcompleted.Event, error) {
 	// prepare the empty report
 	outputReport := checkcompleted.New(event.Payload.CheckID)
 
-	// externalID := event.Payload.AWSAuth.ExternalID
-	// roleARN := event.Payload.AWSAuth.RoleARN
+	auth := event.Payload.AWSAuth
 
 	impact := 0
 
@@ -25,12 +21,8 @@ func paidSupport(event check.Event) (*checkcompleted.Event, error) {
 
 	// initialize severity
 	severity := checkcompleted.INFO
-	// authenticate to AWS
-	sess := session.Must(session.NewSession(&aws.Config{
-		Region: aws.String(endpoints.UsEast1RegionID),
-	}))
 
-	supportSvc := support.New(sess, &aws.Config{})
+	supportSvc := NewSupportClient(auth)
 	_, err = supportSvc.DescribeServices(&support.DescribeServicesInput{})
 
 	// reverse logic, we need to get certain error message

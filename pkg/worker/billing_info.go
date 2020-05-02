@@ -61,7 +61,7 @@ func billingInfo(event check.Event) (*checkcompleted.Event, error) {
 		log.WithFields(log.Fields{
 			"costParams": costParams,
 		}).Error("calling GetCostAndUsage returned error")
-		return nil, err
+		return &outputReport, err
 	}
 
 	sum := 0.0

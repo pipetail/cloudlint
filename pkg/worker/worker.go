@@ -40,8 +40,8 @@ func Handle() check.Result {
 		go concurrentHandler(newmsg, &wg, queue)
 		res := checkcompleted.Check{
 			ID:       val.ID,
-			Severity: 1,
-			Impact:   123,
+			Severity: checkcompleted.INFO,
+			Impact:   0,
 		}
 		//res := handler(newmsg)
 		result.CheckResult = append(result.CheckResult, res)
@@ -50,14 +50,26 @@ func Handle() check.Result {
 
 	wg.Wait() // blocks here
 
-	for i := range result.CheckResult {
+	for range result.CheckResult {
 		item := <-queue
-		result.CheckResult[i].Impact = item.Impact
-		result.CheckResult[i].Severity = item.Severity
-		//fmt.Println("[main]: msg %v %v ", item, res)
+
+		idx := indexOf(item.ID, result.CheckResult)
+		if idx != -1 {
+			result.CheckResult[idx].Impact = item.Impact
+			result.CheckResult[idx].Severity = item.Severity
+		}
 	}
 
 	return result
+}
+
+func indexOf(element string, data []checkcompleted.Check) int {
+	for k, v := range data {
+		if element == v.ID {
+			return k
+		}
+	}
+	return -1 //not found.
 }
 
 // Print prints the report in a pretty table output
@@ -68,13 +80,20 @@ func Print(res check.Result) {
 	t.AppendHeader(table.Row{"#", "Group", "Name", "Impact $", "Severity"})
 
 	totalImpact := 0
+	billIdx := 0
+
 	for i, result := range res.CheckResult {
 		//fmt.Printf("%s: %+v %+v\n", i, res.CheckInfo[i].ID, result)
+		if res.CheckInfo[i].Type == "aws_monthly_bill" {
+			billIdx = i
+			continue
+		}
 		t.AppendRow([]interface{}{res.CheckInfo[i].Type, res.CheckInfo[i].Group, res.CheckInfo[i].Name, result.Impact, checkcompleted.Severity(result.Severity)})
 		totalImpact += result.Impact
 	}
 
-	t.AppendFooter(table.Row{"", "", "Total", totalImpact})
+	t.AppendFooter(table.Row{"", "", "Total impact", totalImpact})
+	t.AppendFooter(table.Row{"", "", res.CheckInfo[billIdx].Name, res.CheckResult[billIdx].Impact})
 	t.Render()
 
 }

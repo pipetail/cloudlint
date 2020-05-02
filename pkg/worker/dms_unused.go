@@ -2,7 +2,6 @@ package worker
 
 import (
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/databasemigrationservice"
 	"github.com/pipetail/cloudlint/pkg/awsregions"
 	"github.com/pipetail/cloudlint/pkg/check"
@@ -80,22 +79,15 @@ func getDmsStoragePriceInRegion(region string, instance *databasemigrationservic
 	}
 
 	// price per month
-	return price * 24 * 30
+	return price
 }
 
 func dmsUnused(event check.Event) (*checkcompleted.Event, error) {
 	// prepare the empty report
 	outputReport := checkcompleted.New(event.Payload.CheckID)
 
-	// externalID := event.Payload.AWSAuth.ExternalID
-	// roleARN := event.Payload.AWSAuth.RoleARN
+	auth := event.Payload.AWSAuth
 	var totalMonthlyPrice float64 = 0
-
-	// authenticate to AWS
-	sess := session.Must(session.NewSession())
-	// creds := stscreds.NewCredentials(sess, roleARN, func(p *stscreds.AssumeRoleProvider) {
-	// 	p.ExternalID = &externalID
-	// })
 
 	regions := awsregions.GetRegions()
 
@@ -106,7 +98,7 @@ func dmsUnused(event check.Event) (*checkcompleted.Event, error) {
 		}).Debug("checking dms_unused in aws region")
 
 		//svc := databasemigrationservice.New(sess, &aws.Config{Credentials: creds, Region: aws.String(region)})
-		svc := databasemigrationservice.New(sess, &aws.Config{Region: aws.String(region)})
+		svc := NewDMSClient(auth, region)
 
 		instances := getDmsWithinRegion(svc)
 
@@ -114,6 +106,10 @@ func dmsUnused(event check.Event) (*checkcompleted.Event, error) {
 
 			// Data transfer should be free
 			totalMonthlyPrice += getDmsStoragePriceInRegion(region, instance) + getDmsComputePriceInRegion(region, instance)
+
+			log.WithFields(log.Fields{
+				"totalMonthlyPrice": totalMonthlyPrice,
+			}).Debug("checking dms_unused in aws region: totalMonthlyPrice partial sum")
 		}
 	}
 

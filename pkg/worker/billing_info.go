@@ -2,7 +2,6 @@ package worker
 
 import (
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/pipetail/cloudlint/pkg/check"
 	"github.com/pipetail/cloudlint/pkg/checkcompleted"
 	log "github.com/sirupsen/logrus"
@@ -11,6 +10,21 @@ import (
 
 	"github.com/aws/aws-sdk-go/service/costexplorer"
 )
+
+func getLastMonthStart() string {
+	//t := time.Now()
+	//	return t.Format("2020-02-01")
+	// TODO: fix this pls
+	return "2020-02-01"
+}
+
+func getLastMonthEnd() string {
+	//t := time.Now()
+
+	// TODO: fix this pls
+	return "2020-04-01"
+
+}
 
 func billingInfo(event check.Event) (*checkcompleted.Event, error) {
 
@@ -21,25 +35,19 @@ func billingInfo(event check.Event) (*checkcompleted.Event, error) {
 		"CheckID": event.Payload.CheckID,
 	}).Info("Checked Unblended cost for all services in cost explorer")
 
-	var amount int64
+	var amount float64
 
-	//Create new Cost Explorer client
-	// authenticate to AWS
-	sess := session.Must(session.NewSession())
+	auth := event.Payload.AWSAuth
 
-	// creds := stscreds.NewCredentials(sess, roleARN, func(p *stscreds.AssumeRoleProvider) {
-	// 	p.ExternalID = &externalID
-	// })
-
-	ce := costexplorer.New(sess)
+	ce := NewCEClient(auth)
 
 	costParams := &costexplorer.GetCostAndUsageInput{
 		//Filter:      &costexplorer.Expression{},
 		Granularity: aws.String("MONTHLY"),
 		Metrics:     []*string{aws.String("UnblendedCost")},
 		TimePeriod: &costexplorer.DateInterval{
-			Start: aws.String("2019-09-01"),
-			End:   aws.String("2019-11-01"),
+			Start: aws.String(getLastMonthStart()),
+			End:   aws.String(getLastMonthEnd()),
 		},
 	}
 
@@ -50,6 +58,9 @@ func billingInfo(event check.Event) (*checkcompleted.Event, error) {
 	// Call to get detailed information on each instance
 	cost, err := ce.GetCostAndUsage(costParams)
 	if err != nil {
+		log.WithFields(log.Fields{
+			"costParams": costParams,
+		}).Error("calling GetCostAndUsage returned error")
 		return nil, err
 	}
 
@@ -60,11 +71,21 @@ func billingInfo(event check.Event) (*checkcompleted.Event, error) {
 		amount := *element.Total["UnblendedCost"].Amount
 		i, _ := strconv.ParseFloat(amount, 64)
 		sum += i
+		log.WithFields(log.Fields{
+			"amount":  amount,
+			"strconv": i,
+			"sum":     sum,
+		}).Debug("sum cost.ResultsByTime")
 		//fmt.Println("Total cost for last month", amount)
 	}
 
 	amountString := *cost.ResultsByTime[len(cost.ResultsByTime)-1].Total["UnblendedCost"].Amount
-	amount, _ = strconv.ParseInt(amountString, 10, 64)
+	amount, _ = strconv.ParseFloat(amountString, 64)
+
+	log.WithFields(log.Fields{
+		"amount":       amount,
+		"amountString": amountString,
+	}).Debug("final amount cost.ResultsByTime")
 
 	// set check details
 	outputReport.Payload.Check.Severity = checkcompleted.INFO

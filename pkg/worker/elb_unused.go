@@ -3,9 +3,8 @@ package worker
 import (
 	"fmt"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
 	elb "github.com/aws/aws-sdk-go/service/elbv2"
+	"github.com/pipetail/cloudlint/pkg/awsregions"
 	"github.com/pipetail/cloudlint/pkg/check"
 	"github.com/pipetail/cloudlint/pkg/checkcompleted"
 	log "github.com/sirupsen/logrus"
@@ -20,99 +19,98 @@ func elbUnused(event check.Event) (*checkcompleted.Event, error) {
 	// prepare the empty report
 	outputReport := checkcompleted.New(event.Payload.CheckID)
 
-	// externalID := event.Payload.AWSAuth.ExternalID
-	// roleARN := event.Payload.AWSAuth.RoleARN
+	auth := event.Payload.AWSAuth
 
-	var notUsed int
+	notUsed := 0
 
-	//Create new ELB client (v2!)
-	// authenticate to AWS
-	sess := session.Must(session.NewSession())
-	// creds := stscreds.NewCredentials(sess, roleARN, func(p *stscreds.AssumeRoleProvider) {
-	// 	p.ExternalID = &externalID
-	// })
+	regions := awsregions.GetRegions()
 
-	svc := elb.New(sess, &aws.Config{Region: aws.String("us-east-1")})
-	input := elb.DescribeLoadBalancersInput{}
+	// see https://godoc.org/github.com/aws/aws-sdk-go/service/ec2#Region
+	for _, region := range regions {
 
-	res, err := svc.DescribeLoadBalancers(&input)
-	if err != nil {
-		return nil, fmt.Errorf("could not fetch ELBs: %s", err)
-	}
+		svc := NewELBClient(auth, region)
 
-	notUsed = 0
-	for _, lb := range res.LoadBalancers {
-		log.WithFields(log.Fields{
-			"LoadBalancerArn": *lb.LoadBalancerArn,
-		}).Debug("found load balancer")
+		input := elb.DescribeLoadBalancersInput{}
 
-		tgInput := elb.DescribeTargetGroupsInput{
-			LoadBalancerArn: lb.LoadBalancerArn,
-		}
-
-		resTg, err := svc.DescribeTargetGroups(&tgInput)
+		res, err := svc.DescribeLoadBalancers(&input)
 		if err != nil {
-			return nil, fmt.Errorf(
-				"could not fetch tg %s details: %s",
-				*lb.LoadBalancerArn,
-				err,
-			)
+			return nil, fmt.Errorf("could not fetch ELBs: %s", err)
 		}
 
-		// if it have 0 target groups - it's not needed
-		if len(resTg.TargetGroups) == 0 {
+		for _, lb := range res.LoadBalancers {
 			log.WithFields(log.Fields{
 				"LoadBalancerArn": *lb.LoadBalancerArn,
-			}).Info("load balancer does not have any target groups")
-			notUsed++
-			continue
-		}
+			}).Debug("found load balancer")
 
-		for _, tg := range resTg.TargetGroups {
-			log.WithFields(log.Fields{
-				"TargetGroupName": *tg.TargetGroupName,
-				"TargetType":      *tg.TargetType,
-			}).Info("found target group")
-
-			if *tg.TargetType == "lambda" {
-				log.WithFields(log.Fields{
-					"TargetGroupArn": *tg.TargetGroupArn,
-				}).Info("skipping Lamba target group")
-				continue
+			tgInput := elb.DescribeTargetGroupsInput{
+				LoadBalancerArn: lb.LoadBalancerArn,
 			}
 
-			healthInput := elb.DescribeTargetHealthInput{
-				TargetGroupArn: tg.TargetGroupArn,
-			}
-
-			healthRes, err := svc.DescribeTargetHealth(&healthInput)
+			resTg, err := svc.DescribeTargetGroups(&tgInput)
 			if err != nil {
 				return nil, fmt.Errorf(
-					"could not fetch health details for %s: %s",
-					*tg.TargetGroupArn,
+					"could not fetch tg %s details: %s",
+					*lb.LoadBalancerArn,
 					err,
 				)
 			}
 
-			unhealthyCount := 0
-			for _, health := range healthRes.TargetHealthDescriptions {
-				if *health.TargetHealth.State != elb.TargetHealthStateEnumHealthy {
-					log.WithFields(log.Fields{
-						"Id":    *health.Target.Id,
-						"State": *health.TargetHealth.State,
-					}).Info("found unhealthy target")
-					unhealthyCount++
-				}
-			}
-
-			if unhealthyCount == len(healthRes.TargetHealthDescriptions) {
+			// if it have 0 target groups - it's not needed
+			if len(resTg.TargetGroups) == 0 {
 				log.WithFields(log.Fields{
-					"TargetGroupArn": *tg.TargetGroupArn,
-				}).Info("found target group without any healthy taget")
+					"LoadBalancerArn": *lb.LoadBalancerArn,
+				}).Info("load balancer does not have any target groups")
 				notUsed++
 				continue
 			}
+
+			for _, tg := range resTg.TargetGroups {
+				log.WithFields(log.Fields{
+					"TargetGroupName": *tg.TargetGroupName,
+					"TargetType":      *tg.TargetType,
+				}).Info("found target group")
+
+				if *tg.TargetType == "lambda" {
+					log.WithFields(log.Fields{
+						"TargetGroupArn": *tg.TargetGroupArn,
+					}).Info("skipping Lamba target group")
+					continue
+				}
+
+				healthInput := elb.DescribeTargetHealthInput{
+					TargetGroupArn: tg.TargetGroupArn,
+				}
+
+				healthRes, err := svc.DescribeTargetHealth(&healthInput)
+				if err != nil {
+					return nil, fmt.Errorf(
+						"could not fetch health details for %s: %s",
+						*tg.TargetGroupArn,
+						err,
+					)
+				}
+
+				unhealthyCount := 0
+				for _, health := range healthRes.TargetHealthDescriptions {
+					if *health.TargetHealth.State != elb.TargetHealthStateEnumHealthy {
+						log.WithFields(log.Fields{
+							"Id":    *health.Target.Id,
+							"State": *health.TargetHealth.State,
+						}).Info("found unhealthy target")
+						unhealthyCount++
+					}
+				}
+
+				if unhealthyCount == len(healthRes.TargetHealthDescriptions) {
+					log.WithFields(log.Fields{
+						"TargetGroupArn": *tg.TargetGroupArn,
+					}).Info("found target group without any healthy taget")
+					notUsed++
+					continue
+				}
+			}
 		}
+
 	}
 
 	// set severity

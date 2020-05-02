@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/aws/aws-sdk-go/service/sts"
@@ -67,17 +66,11 @@ func getImagePriceInRegion(region string) (price float64) {
 	return priceMap[region]
 }
 
-func getImagesWithinRegion(ec2client *ec2.EC2, stsclient *sts.STS) ([]*ec2.Image, error) {
-	// get account id
-	getCallerIdenityInput := sts.GetCallerIdentityInput{}
-	identity, err := stsclient.GetCallerIdentity(&getCallerIdenityInput)
-	if err != nil {
-		return nil, fmt.Errorf("could not obtain sts info: %s", err)
-	}
+func getImagesWithinRegion(ec2client *ec2.EC2, account *string) ([]*ec2.Image, error) {
 
 	// we can use the same input for all regions
 	describeImagesInput := ec2.DescribeImagesInput{
-		Owners: []*string{identity.Account},
+		Owners: []*string{account},
 	}
 
 	// get images
@@ -91,16 +84,20 @@ func getImagesWithinRegion(ec2client *ec2.EC2, stsclient *sts.STS) ([]*ec2.Image
 
 func amiOld(event check.Event) (*checkcompleted.Event, error) {
 	outputReport := checkcompleted.New(event.Payload.CheckID)
-	// externalID := event.Payload.AWSAuth.ExternalID
-	// roleARN := event.Payload.AWSAuth.RoleARN
 
-	sess := session.Must(session.NewSession())
-	// creds := stscreds.NewCredentials(sess, roleARN, func(p *stscreds.AssumeRoleProvider) {
-	// 	p.ExternalID = &externalID
-	// })
+	auth := event.Payload.AWSAuth
 
 	// prepare STS client for all regions
-	stsSvc := sts.New(sess)
+	stsSvc := sts.New(session.New())
+
+	// get account id
+	getCallerIdenityInput := sts.GetCallerIdentityInput{}
+	identity, err := stsSvc.GetCallerIdentity(&getCallerIdenityInput)
+	account := identity.Account
+
+	if err != nil {
+		return nil, fmt.Errorf("could not obtain sts info: %s", err)
+	}
 
 	// prepare counter for all regions
 	impactTotal := int64(0)
@@ -113,8 +110,8 @@ func amiOld(event check.Event) (*checkcompleted.Event, error) {
 		}).Debug("checking ami_old in aws region")
 
 		// create svc for the given region
-		ec2Svc := ec2.New(sess, &aws.Config{Region: aws.String(region)})
-		images, err := getImagesWithinRegion(ec2Svc, stsSvc)
+		ec2Svc := NewEC2Client(auth, region)
+		images, err := getImagesWithinRegion(ec2Svc, account)
 		if err != nil {
 			return nil, fmt.Errorf("could not obtain images: %s", err)
 		}

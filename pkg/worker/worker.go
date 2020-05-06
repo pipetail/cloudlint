@@ -145,6 +145,8 @@ func Handler(message check.Event) *checkcompleted.Event {
 		outputReport, err = amiOld(message)
 	case check.GetChecks()[10].Type:
 		outputReport, err = ebsopt(message)
+	case check.GetChecks()[11].Type:
+		outputReport, err = datatransferhuge(message)
 	default:
 		log.WithFields(log.Fields{
 			"err": err,

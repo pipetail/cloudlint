@@ -2,6 +2,9 @@ package worker
 
 import (
 	"github.com/aws/aws-sdk-go/aws"
+
+	"github.com/pipetail/cloudlint/internal/utils"
+
 	"github.com/pipetail/cloudlint/pkg/check"
 	"github.com/pipetail/cloudlint/pkg/checkcompleted"
 	log "github.com/sirupsen/logrus"
@@ -10,21 +13,6 @@ import (
 
 	"github.com/aws/aws-sdk-go/service/costexplorer"
 )
-
-func getLastMonthStart() string {
-	//t := time.Now()
-	//	return t.Format("2020-02-01")
-	// TODO: fix this pls
-	return "2020-02-01"
-}
-
-func getLastMonthEnd() string {
-	//t := time.Now()
-
-	// TODO: fix this pls
-	return "2020-04-01"
-
-}
 
 func billingInfo(event check.Event) (*checkcompleted.Event, error) {
 
@@ -46,8 +34,8 @@ func billingInfo(event check.Event) (*checkcompleted.Event, error) {
 		Granularity: aws.String("MONTHLY"),
 		Metrics:     []*string{aws.String("UnblendedCost")},
 		TimePeriod: &costexplorer.DateInterval{
-			Start: aws.String(getLastMonthStart()),
-			End:   aws.String(getLastMonthEnd()),
+			Start: aws.String(utils.GetLastMonthStart()),
+			End:   aws.String(utils.GetLastMonthEnd()),
 		},
 	}
 
@@ -63,6 +51,10 @@ func billingInfo(event check.Event) (*checkcompleted.Event, error) {
 		}).Error("calling GetCostAndUsage returned error")
 		return &outputReport, err
 	}
+
+	log.WithFields(log.Fields{
+		"cost": cost,
+	}).Debug("GetCostAndUsage successful:")
 
 	sum := 0.0
 

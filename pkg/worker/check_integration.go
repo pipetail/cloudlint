@@ -8,6 +8,8 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/costexplorer"
 	"github.com/aws/aws-sdk-go/service/costexplorer/costexploreriface"
+
+	"github.com/pipetail/cloudlint/internal/utils"
 	"github.com/pipetail/cloudlint/pkg/check"
 	"github.com/pipetail/cloudlint/pkg/checkcompleted"
 )
@@ -30,8 +32,8 @@ func checkIntegrationHandler(costExplorerScv costexploreriface.CostExplorerAPI, 
 		Granularity: aws.String("MONTHLY"),
 		Metrics:     []*string{aws.String("UnblendedCost")},
 		TimePeriod: &costexplorer.DateInterval{
-			Start: aws.String("2019-09-01"),
-			End:   aws.String("2019-11-01"),
+			Start: aws.String(utils.GetLastMonthStart()),
+			End:   aws.String(utils.GetLastMonthEnd()),
 		},
 	}
 

@@ -102,7 +102,14 @@ func concurrentHandler(message check.Event, wg *sync.WaitGroup, c chan<- checkco
 
 	outputReport := Handler(message)
 
-	c <- outputReport.Payload.Check
+	if outputReport != nil {
+		c <- outputReport.Payload.Check
+	} else {
+		log.WithFields(log.Fields{
+			"message": message,
+		}).Error("report finished with error")
+		c <- checkcompleted.New(message.Payload.CheckID).Payload.Check
+	}
 
 	log.WithFields(log.Fields{
 		"report": outputReport,

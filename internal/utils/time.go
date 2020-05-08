@@ -6,8 +6,8 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// GetLastMonthStart return the first day of last month in format YYYY-DD-MM
-func GetLastMonthStart() string {
+// GetLastBillingPeriodStart return the first day of last month in format YYYY-DD-MM
+func GetLastBillingPeriodStart() string {
 	t := time.Now()
 	log.WithFields(log.Fields{
 		"time": t,
@@ -24,8 +24,8 @@ func GetLastMonthStart() string {
 	return d.Format("2006-01-02")
 }
 
-// GetLastMonthEnd return the first day of this month (considered the end of billing period) in format YYYY-DD-MM
-func GetLastMonthEnd() string {
+// GetLastBillingPeriodEnd return the first day of this month (considered the end of billing period) in format YYYY-DD-MM
+func GetLastBillingPeriodEnd() string {
 	t := time.Now()
 	log.WithFields(log.Fields{
 		"time": t,

@@ -34,8 +34,8 @@ func billingInfo(event check.Event) (*checkcompleted.Event, error) {
 		Granularity: aws.String("MONTHLY"),
 		Metrics:     []*string{aws.String("UnblendedCost")},
 		TimePeriod: &costexplorer.DateInterval{
-			Start: aws.String(utils.GetLastMonthStart()),
-			End:   aws.String(utils.GetLastMonthEnd()),
+			Start: aws.String(utils.GetLastBillingPeriodStart()),
+			End:   aws.String(utils.GetLastBillingPeriodEnd()),
 		},
 	}
 

@@ -11,6 +11,7 @@ import (
 	elb "github.com/aws/aws-sdk-go/service/elbv2"
 	"github.com/aws/aws-sdk-go/service/support"
 	"github.com/pipetail/cloudlint/pkg/checkreport"
+	log "github.com/sirupsen/logrus"
 )
 
 // NewEC2Client constructs a new ec2 client with credentials and session
@@ -36,6 +37,10 @@ func NewEC2Client(auth checkreport.AwsAuth, region string) *ec2.EC2 {
 	}
 
 	ec2Svc := ec2.New(sess, config)
+
+	log.WithFields(log.Fields{
+		"ec2Svc": ec2Svc,
+	}).Debug("ec2 client init")
 
 	return ec2Svc
 }
@@ -64,6 +69,10 @@ func NewELBClient(auth checkreport.AwsAuth, region string) *elb.ELBV2 {
 
 	elbSvc := elb.New(sess, config)
 
+	log.WithFields(log.Fields{
+		"elbSvc": elbSvc,
+	}).Debug("elb client init")
+
 	return elbSvc
 }
 
@@ -90,6 +99,10 @@ func NewDMSClient(auth checkreport.AwsAuth, region string) *databasemigrationser
 	}
 
 	dmsSvc := databasemigrationservice.New(sess, config)
+
+	log.WithFields(log.Fields{
+		"dmsSvc": dmsSvc,
+	}).Debug("dms client init")
 
 	return dmsSvc
 }
@@ -119,6 +132,10 @@ func NewCEClient(auth checkreport.AwsAuth) *costexplorer.CostExplorer {
 
 	ceSvc := costexplorer.New(sess, config)
 
+	log.WithFields(log.Fields{
+		"ceSvc": ceSvc,
+	}).Debug("ce client init")
+
 	return ceSvc
 }
 
@@ -146,6 +163,10 @@ func NewSupportClient(auth checkreport.AwsAuth) *support.Support {
 	}
 
 	svc := support.New(sess, config)
+
+	log.WithFields(log.Fields{
+		"supportSvc": svc,
+	}).Debug("support client init")
 
 	return svc
 }

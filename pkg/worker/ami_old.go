@@ -96,7 +96,7 @@ func amiOld(event check.Event) (*checkcompleted.Event, error) {
 	account := identity.Account
 
 	if err != nil {
-		return nil, fmt.Errorf("could not obtain sts info: %s", err)
+		return &outputReport, fmt.Errorf("could not obtain sts info: %s", err)
 	}
 
 	// prepare counter for all regions
@@ -113,13 +113,13 @@ func amiOld(event check.Event) (*checkcompleted.Event, error) {
 		ec2Svc := NewEC2Client(auth, region)
 		images, err := getImagesWithinRegion(ec2Svc, account)
 		if err != nil {
-			return nil, fmt.Errorf("could not obtain images: %s", err)
+			return &outputReport, fmt.Errorf("could not obtain images: %s", err)
 		}
 
 		// count space used by images in the current region
 		countRegional, err := countImagesUsedSize(images, 90*24) // 90 days
 		if err != nil {
-			return nil, fmt.Errorf("could not obtain count of used EBS space for %s: %s", region, err)
+			return &outputReport, fmt.Errorf("could not obtain count of used EBS space for %s: %s", region, err)
 		}
 
 		// get total price for the current region (snapshots have monthly pricing / GiB)

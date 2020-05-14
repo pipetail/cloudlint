@@ -1,10 +1,13 @@
 name: Publish Docker
 
 on:
+  release:
+    types: [published]
   push:
+    tags:
+    - '*'
     branches:
-      - master
-      - mb-dockerhub
+    - master
 
 jobs:
   build:
@@ -12,9 +15,13 @@ jobs:
 
     steps:
     - uses: actions/checkout@master
+    - name: Get release version
+      id: get_version
+      run: echo ::set-env name=RELEASE_VERSION::$(echo ${GITHUB_REF:10})
     - name: Publish to Registry
       uses: elgohr/Publish-Docker-Github-Action@master
       with:
         name: pipetail/cloudlint
         username: ${{ secrets.DOCKER_USERNAME }}
         password: ${{ secrets.DOCKER_PASSWORD }}
+        tags: "latest,${{ env.RELEASE_VERSION }}"

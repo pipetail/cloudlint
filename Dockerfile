@@ -14,5 +14,5 @@ RUN set -eux \
 
 FROM alpine
 COPY --from=builder /build/bin/cloudlint /usr/bin/cloudlint
-COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+ENV AWS_SDK_LOAD_CONFIG=1
 ENTRYPOINT ["/usr/bin/cloudlint"]

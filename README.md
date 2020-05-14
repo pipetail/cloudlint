@@ -6,7 +6,7 @@ cloudlint is an open source system for checking AWS configuration. It provides b
 cloudlint is built upon many years of experience at running production workloads on AWS at scale, combined with best practices from the community, wrapped in a an user-friendly CLI.
 
 ----
-
+![tests](https://github.com/pipetail/cloudlint/workflows/tests/badge.svg)
 ## How to start using cloudlint
 
 See our documentation at [docs.cloudlint.io](http://docs.cloudlint.io).

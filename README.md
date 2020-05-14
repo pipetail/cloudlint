@@ -24,7 +24,6 @@ docker pull pipetail/cloudlint:latest
 docker run -it --rm             \
     -v ~/.aws:/root/.aws:ro     \
     -e AWS_PROFILE=myawsprofile \
-    -e AWS_SDK_LOAD_CONFIG=1    \
     pipetail/cloudlint:latest run
 ```
 

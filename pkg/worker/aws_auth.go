@@ -5,10 +5,12 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials/stscreds"
 	"github.com/aws/aws-sdk-go/aws/endpoints"
 	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/cloudwatch"
 	"github.com/aws/aws-sdk-go/service/costexplorer"
 	"github.com/aws/aws-sdk-go/service/databasemigrationservice"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	elb "github.com/aws/aws-sdk-go/service/elbv2"
+	"github.com/aws/aws-sdk-go/service/pricing"
 	"github.com/aws/aws-sdk-go/service/support"
 	"github.com/pipetail/cloudlint/pkg/checkreport"
 	log "github.com/sirupsen/logrus"
@@ -74,6 +76,37 @@ func NewELBClient(auth checkreport.AwsAuth, region string) *elb.ELBV2 {
 	}).Debug("elb client init")
 
 	return elbSvc
+}
+
+// NewCWClient constructs a new cloudwatch client with credentials and session
+func NewCWClient(auth checkreport.AwsAuth, region string) *cloudwatch.CloudWatch {
+
+	externalID := auth.ExternalID
+	roleARN := auth.RoleARN
+
+	sess := session.Must(session.NewSession())
+
+	config := aws.NewConfig().WithCredentialsChainVerboseErrors(true)
+
+	if region != "" {
+		config = config.WithRegion(region)
+	}
+
+	if (externalID != "") && (roleARN != "") {
+		creds := stscreds.NewCredentials(sess, roleARN, func(p *stscreds.AssumeRoleProvider) {
+			p.ExternalID = &externalID
+		})
+
+		config = config.WithCredentials(creds)
+	}
+
+	svc := cloudwatch.New(sess, config)
+
+	log.WithFields(log.Fields{
+		"cloudwatch": svc,
+	}).Debug("cloudwatch client init")
+
+	return svc
 }
 
 // NewDMSClient constructs a new dms client with credentials and session
@@ -163,6 +196,39 @@ func NewSupportClient(auth checkreport.AwsAuth) *support.Support {
 	}
 
 	svc := support.New(sess, config)
+
+	log.WithFields(log.Fields{
+		"supportSvc": svc,
+	}).Debug("support client init")
+
+	return svc
+}
+
+// NewPricingClient constructs a new pricing client with credentials and session
+func NewPricingClient(auth checkreport.AwsAuth) *pricing.Pricing {
+
+	region := endpoints.UsEast1RegionID
+
+	externalID := auth.ExternalID
+	roleARN := auth.RoleARN
+
+	sess := session.Must(session.NewSession())
+
+	config := aws.NewConfig()
+
+	if region != "" {
+		config = config.WithRegion(region)
+	}
+
+	if (externalID != "") && (roleARN != "") {
+		creds := stscreds.NewCredentials(sess, roleARN, func(p *stscreds.AssumeRoleProvider) {
+			p.ExternalID = &externalID
+		})
+
+		config = config.WithCredentials(creds)
+	}
+
+	svc := pricing.New(sess, config)
 
 	log.WithFields(log.Fields{
 		"supportSvc": svc,

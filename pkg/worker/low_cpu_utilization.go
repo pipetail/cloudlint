@@ -131,7 +131,7 @@ func getEC2InstancesPriceWithinRegion(ec2client *ec2.EC2, pricingClient *pricing
 
 		for _, inst := range resp.Reservations[idx].Instances {
 
-            price += awspricing.GetMonthlyPriceOfInstance(pricingClient, *inst.InstanceType, region)
+			price += awspricing.GetMonthlyPriceOfInstance(pricingClient, *inst.InstanceType, region)
 			log.WithFields(log.Fields{
 				"InstanceId": *inst.InstanceId,
 			}).Info("getEC2InstancesPriceWithinRegion")

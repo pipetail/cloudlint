@@ -112,6 +112,13 @@ func GetChecks() []Check {
 			Type:        "ebs_opt",
 			Description: "There are some EC2 instances with EBS attatached but at the same time they have EBS Optimization disabled",
 		},
+		{
+			ID:          uuid.New().String(),
+			Name:        "EC2 instances CPUs are underutilized",
+			Group:       "Incorrect service usage",
+			Type:        "lowcpuutilization",
+			Description: "Average CPU utilization of all EC2 instances is lower than 15%",
+		},
 	}
 
 	return checks

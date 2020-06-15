@@ -41,3 +41,30 @@ func GetLastBillingPeriodEnd() string {
 	// this is the **magical reference date**
 	return d.Format("2006-01-02")
 }
+
+// GetTimeTwoWeeksAgoStart returns timestamp two weeks ago
+func GetTimeTwoWeeksAgoStart() *time.Time {
+	t := time.Now()
+	log.WithFields(log.Fields{
+		"time": t,
+	}).Debug("current time:")
+
+	// minus 14 days
+	d := t.AddDate(0, 0, -14)
+
+	log.WithFields(log.Fields{
+		"time": d,
+	}).Debug("start of last month:")
+
+	return &d
+}
+
+// GetTimeTwoWeeksAgoStart returns timestamp two weeks ago
+func GetTimeNow() *time.Time {
+	t := time.Now()
+	log.WithFields(log.Fields{
+		"time": t,
+	}).Debug("current time:")
+
+	return &t
+}

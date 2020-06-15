@@ -27,6 +27,8 @@ func checkIntegration(event check.Event) (*checkcompleted.Event, error) {
 
 func checkIntegrationHandler(costExplorerScv costexploreriface.CostExplorerAPI, event *checkcompleted.Event) error {
 
+	// TODO: we can actually run this with DryRun: true
+
 	// create dummy query to costexplorer
 	costParams := &costexplorer.GetCostAndUsageInput{
 		Granularity: aws.String("MONTHLY"),

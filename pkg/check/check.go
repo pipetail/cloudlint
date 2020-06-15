@@ -110,7 +110,14 @@ func GetChecks() []Check {
 			Name:        "EC2 instances are not EBS Optimized",
 			Group:       "Incorrect service usage",
 			Type:        "ebs_opt",
-			Description: "There are some EC2 instances with EBS attatached but at the same time they have EBS Optimization disabled",
+			Description: "There are some EC2 instances with EBS attached but at the same time they have EBS Optimization disabled",
+		},
+		{
+			ID:          uuid.New().String(),
+			Name:        "Data Transfer cost is huge",
+			Group:       "Incorrect service usage",
+			Type:        "datatransfer_huge",
+			Description: "Data Transfer cost is high relative to total spend",
 		},
 	}
 

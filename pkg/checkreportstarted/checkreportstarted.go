@@ -1,6 +1,8 @@
 package checkreportstarted
 
-import "github.com/pipetail/cloudlint/pkg/check"
+import (
+	"github.com/pipetail/cloudlint/pkg/check"
+)
 
 /*
 {
@@ -41,4 +43,36 @@ func New(reportID string) Event {
 			ReportID: reportID,
 		},
 	}
+}
+
+// WithFilter - apply filter on checks
+func (e Event) WithFilter(filterCheck []string) Event {
+
+	// no filter specified, return the original event
+	if len(filterCheck) == 0 {
+		return e
+	}
+
+	newEvent := New(e.Payload.ReportID)
+
+	newEvent.Payload.Checks = nil
+
+	for _, check := range e.Payload.Checks {
+
+		keep := func() bool {
+			for _, filter := range filterCheck {
+				if filter == check.Type {
+					return true
+				}
+			}
+			return false
+		}
+
+		if keep() {
+			newEvent.Payload.Checks = append(newEvent.Payload.Checks, check)
+		}
+
+	}
+
+	return newEvent
 }

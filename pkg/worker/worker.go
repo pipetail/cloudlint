@@ -14,16 +14,20 @@ import (
 )
 
 // Handle function
-func Handle() check.Result {
+func Handle(filterChecks []string) check.Result {
 
 	reportID := uuid.New().String()
-	outputReport := checkreportstarted.New(reportID)
+	outputReport := checkreportstarted.New(reportID).WithFilter(filterChecks)
 
 	result := check.Result{}
 
 	var wg sync.WaitGroup // create waitgroup (empty struct)
 
 	queue := make(chan checkcompleted.Check, len(outputReport.Payload.Checks))
+
+	log.WithFields(log.Fields{
+		"report": outputReport,
+	}).Debug("report started")
 
 	for _, val := range outputReport.Payload.Checks {
 
@@ -80,7 +84,7 @@ func Print(res check.Result) {
 	t.AppendHeader(table.Row{"#", "Group", "Name", "Impact $", "Severity"})
 
 	totalImpact := 0
-	billIdx := 0
+	billIdx := -1
 
 	for i, result := range res.CheckResult {
 		//fmt.Printf("%s: %+v %+v\n", i, res.CheckInfo[i].ID, result)
@@ -93,7 +97,9 @@ func Print(res check.Result) {
 	}
 
 	t.AppendFooter(table.Row{"", "", "Total impact", totalImpact})
-	t.AppendFooter(table.Row{"", "", res.CheckInfo[billIdx].Name, res.CheckResult[billIdx].Impact})
+	if billIdx >= 0 {
+		t.AppendFooter(table.Row{"", "", res.CheckInfo[billIdx].Name, res.CheckResult[billIdx].Impact})
+	}
 	t.Render()
 
 }

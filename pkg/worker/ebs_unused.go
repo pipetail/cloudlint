@@ -1,12 +1,11 @@
 package worker
 
 import (
-    "github.com/aws/aws-sdk-go/aws"
     "github.com/aws/aws-sdk-go/aws/credentials"
     "github.com/aws/aws-sdk-go/aws/session"
     "github.com/aws/aws-sdk-go/service/ec2"
     "github.com/aws/aws-sdk-go/service/pricing"
-    "github.com/pipetail/cloudlint/internal/utils"
+    "github.com/pipetail/cloudlint/pkg/awspricing"
     "github.com/pipetail/cloudlint/pkg/awsregions"
     "github.com/pipetail/cloudlint/pkg/check"
     "github.com/pipetail/cloudlint/pkg/checkcompleted"
@@ -31,57 +30,10 @@ func GetVolumesPrice(volumes []*ec2.Volume, client *pricing.Pricing, region stri
 		totalSize += *volume.Size
 		//countDisks++
 
-        totalMonthlyPrice += float64(*volume.Size) * getPriceOfValue(client, *volume.VolumeType, region)
+        totalMonthlyPrice += float64(*volume.Size) * awspricing.GetPriceOfValue(client, *volume.VolumeType, region)
 	}
 
 	return totalMonthlyPrice
-}
-
-func getPriceOfValue(client *pricing.Pricing, volumeType string, region string) float64 {
-
-    input := pricing.GetProductsInput{
-        Filters: []*pricing.Filter{
-            {
-                Field: aws.String("ServiceCode"),
-                Type:  aws.String("TERM_MATCH"),
-                Value: aws.String("AmazonEC2"),
-            },
-            {
-                Field: aws.String("Location"),
-                Type:  aws.String("TERM_MATCH"),
-                Value: aws.String(utils.GetLocationForRegion(region)),
-            },
-            {
-                Field: aws.String("volumeType"),
-                Type:  aws.String("TERM_MATCH"),
-                Value: aws.String(volumeType),
-            },
-        },
-        FormatVersion: aws.String("aws_v1"),
-        MaxResults:    aws.Int64(1),
-    }
-
-    // this is a workaround for a bug: https://github.com/aws/aws-sdk-go/issues/3323
-    input.SetServiceCode("AmazonEC2")
-
-    log.WithFields(log.Fields{
-        "input": input,
-    }).Info("getPriceOfValue")
-
-    resp, err := client.GetProducts(&input)
-
-    if err != nil {
-        log.WithFields(log.Fields{
-            "err": err,
-        }).Error("checking getPriceOfValue")
-        return 0
-    }
-
-    price := extractPrice(resp)
-
-    pricePerMonth := getPricePerMonth(price)
-
-    return pricePerMonth
 }
 
 func getVolumesWithinRegion(ec2client *ec2.EC2) []*ec2.Volume {
@@ -139,6 +91,7 @@ func ebsunused(event check.Event) (*checkcompleted.Event, error) {
 
 		// TODO: check if volumes.nextToken is nil
 		totalMonthlyPrice += GetVolumesPrice(detachedVolumes, pricingClient, region)
+        awspricing.GetPriceOfValue(pricingClient, "Provisioned IOPS", region)
     }
 
 	// TODO: make this relative to total spend

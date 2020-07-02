@@ -1,13 +1,16 @@
 package worker
 
 import (
-	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/ec2"
-	"github.com/pipetail/cloudlint/pkg/awsregions"
-	"github.com/pipetail/cloudlint/pkg/check"
-	"github.com/pipetail/cloudlint/pkg/checkcompleted"
-	log "github.com/sirupsen/logrus"
+    "github.com/aws/aws-sdk-go/aws"
+    "github.com/aws/aws-sdk-go/aws/credentials"
+    "github.com/aws/aws-sdk-go/aws/session"
+    "github.com/aws/aws-sdk-go/service/ec2"
+    "github.com/aws/aws-sdk-go/service/pricing"
+    "github.com/pipetail/cloudlint/internal/utils"
+    "github.com/pipetail/cloudlint/pkg/awsregions"
+    "github.com/pipetail/cloudlint/pkg/check"
+    "github.com/pipetail/cloudlint/pkg/checkcompleted"
+    log "github.com/sirupsen/logrus"
 )
 
 // Parameters for AWS session used for dependency injection
@@ -18,7 +21,7 @@ type Parameters struct {
 }
 
 // GetVolumesPrice sums the final price for all the volumes
-func GetVolumesPrice(volumes []*ec2.Volume) float64 {
+func GetVolumesPrice(volumes []*ec2.Volume, client *pricing.Pricing, region string) float64 {
 
 	var totalSize int64 = 0
 	var totalMonthlyPrice float64 = 0
@@ -28,24 +31,57 @@ func GetVolumesPrice(volumes []*ec2.Volume) float64 {
 		totalSize += *volume.Size
 		//countDisks++
 
-		// https://aws.amazon.com/ebs/pricing/
-		switch volumeType := *volume.VolumeType; volumeType {
-		case "gp2":
-			// General Purpose SSD (gp2) Volumes	$0.119 per GB-month of provisioned storage
-			totalMonthlyPrice += float64(*volume.Size) * float64(0.119)
-		case "io1":
-			// $0.149 per GB-month of provisioned storage AND $0.078 per provisioned IOPS-month
-			totalMonthlyPrice += float64(*volume.Size)*float64(0.149) + float64(*volume.Iops)*float64(0.078)
-		case "st1":
-			// $0.054 per GB-month of provisioned storage
-			totalMonthlyPrice += float64(*volume.Size) * float64(0.054)
-		case "sc1":
-			// $0.03 per GB-month of provisioned storage
-			totalMonthlyPrice += float64(*volume.Size) * float64(0.03)
-		}
+        totalMonthlyPrice += float64(*volume.Size) * getPriceOfValue(client, *volume.VolumeType, region)
 	}
 
 	return totalMonthlyPrice
+}
+
+func getPriceOfValue(client *pricing.Pricing, volumeType string, region string) float64 {
+
+    input := pricing.GetProductsInput{
+        Filters: []*pricing.Filter{
+            {
+                Field: aws.String("ServiceCode"),
+                Type:  aws.String("TERM_MATCH"),
+                Value: aws.String("AmazonEC2"),
+            },
+            {
+                Field: aws.String("Location"),
+                Type:  aws.String("TERM_MATCH"),
+                Value: aws.String(utils.GetLocationForRegion(region)),
+            },
+            {
+                Field: aws.String("volumeType"),
+                Type:  aws.String("TERM_MATCH"),
+                Value: aws.String(volumeType),
+            },
+        },
+        FormatVersion: aws.String("aws_v1"),
+        MaxResults:    aws.Int64(1),
+    }
+
+    // this is a workaround for a bug: https://github.com/aws/aws-sdk-go/issues/3323
+    input.SetServiceCode("AmazonEC2")
+
+    log.WithFields(log.Fields{
+        "input": input,
+    }).Info("getPriceOfValue")
+
+    resp, err := client.GetProducts(&input)
+
+    if err != nil {
+        log.WithFields(log.Fields{
+            "err": err,
+        }).Error("checking getPriceOfValue")
+        return 0
+    }
+
+    price := extractPrice(resp)
+
+    pricePerMonth := getPricePerMonth(price)
+
+    return pricePerMonth
 }
 
 func getVolumesWithinRegion(ec2client *ec2.EC2) []*ec2.Volume {
@@ -86,6 +122,8 @@ func ebsunused(event check.Event) (*checkcompleted.Event, error) {
 
 	regions := awsregions.GetRegions()
 
+    pricingClient := NewPricingClient(auth)
+
 	// see https://godoc.org/github.com/aws/aws-sdk-go/service/ec2#Region
 	for _, region := range regions {
 
@@ -100,8 +138,8 @@ func ebsunused(event check.Event) (*checkcompleted.Event, error) {
 		detachedVolumes := filterDetachedVolumes(volumes)
 
 		// TODO: check if volumes.nextToken is nil
-		totalMonthlyPrice += GetVolumesPrice(detachedVolumes)
-	}
+		totalMonthlyPrice += GetVolumesPrice(detachedVolumes, pricingClient, region)
+    }
 
 	// TODO: make this relative to total spend
 	severity := checkcompleted.INFO

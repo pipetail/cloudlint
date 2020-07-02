@@ -100,16 +100,18 @@ func getCPUUtilizationWithinRegion(client *cloudwatch.CloudWatch) *WeightedAvera
 }
 
 func getPricePerMonth(price ec2price) float64 {
-	if price.unit != "Hrs" {
+    switch price.unit {
+    case "Hrs":
+        return price.value * 24 * 30
+    case "GB-Mo":
+        return price.value
+    default:
+        log.WithFields(log.Fields{
+            "priceUnit": price.unit,
+        }).Error("priceUnit is not Hrs")
 
-		log.WithFields(log.Fields{
-			"priceUnit": price.unit,
-		}).Error("priceUnit is not Hrs")
-
-		panic(fmt.Sprintf("%v", price.unit))
-	}
-
-	return price.value * 24 * 30
+        panic(fmt.Sprintf("%v", price.unit))
+    }
 }
 
 type ec2price struct {

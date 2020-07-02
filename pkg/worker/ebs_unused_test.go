@@ -201,7 +201,7 @@ func TestGetVolumesPrice(t *testing.T) {
 	}
 
 	for _, table := range tables {
-		total := GetVolumesPrice(table.x)
+		total := GetVolumesPrice(table.x, nil, "")
 		if !FloatEquals(total, table.y) {
 			t.Errorf("TotalPrice of volumes was incorrect, got: %f, want: %f.", total, table.y)
 		}

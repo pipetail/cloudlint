@@ -2,6 +2,8 @@ package worker
 
 import (
 	"fmt"
+	"reflect"
+	"strconv"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/cloudwatch"
@@ -14,6 +16,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+// WeightedAverage stores weighted average
 type WeightedAverage struct {
 	Value  float64 `json:"value"`
 	Weight float64 `json:"weight"`
@@ -70,7 +73,6 @@ func getCPUUtilizationWithinRegion(client *cloudwatch.CloudWatch) *WeightedAvera
 		log.WithFields(log.Fields{
 			"metricData": metricdata,
 		}).Info("checking lowcpuutilization")
-		fmt.Println(*metricdata.Id)
 
 		records += len(metricdata.Values)
 		for index := range metricdata.Timestamps {
@@ -97,6 +99,66 @@ func getCPUUtilizationWithinRegion(client *cloudwatch.CloudWatch) *WeightedAvera
 	return result
 }
 
+func getPricePerMonth(price ec2price) float64 {
+	if price.unit != "Hrs" {
+
+		log.WithFields(log.Fields{
+			"priceUnit": price.unit,
+		}).Error("priceUnit is not Hrs")
+
+		panic(fmt.Sprintf("%v", price.unit))
+	}
+
+	return price.value * 24 * 30
+}
+
+type ec2price struct {
+	value float64
+	unit  string
+}
+
+func extractPrice(resp *pricing.GetProductsOutput) ec2price {
+
+	// priceList[0] seems wrong
+	// when checking the data, it seems like the index 0 always has the most used OnDemand options, while index 1 and 2 have Unused Reservation and Reservation (respectively)
+	// we shouldn't rely on that though...
+	onDemand := resp.PriceList[0]["terms"].(map[string]interface{})["OnDemand"]
+
+	keys := reflect.ValueOf(onDemand).MapKeys()
+
+	productCode := keys[0]
+
+	priceDimensions := onDemand.(map[string]interface{})[productCode.String()].(map[string]interface{})["priceDimensions"]
+
+	pcKeys := reflect.ValueOf(priceDimensions).MapKeys()
+
+	priceDimensionsKey := pcKeys[0]
+
+	price := priceDimensions.(map[string]interface{})[priceDimensionsKey.String()].(map[string]interface{})["pricePerUnit"].(map[string]interface{})["USD"].(string)
+	priceUnit := priceDimensions.(map[string]interface{})[priceDimensionsKey.String()].(map[string]interface{})["unit"].(string)
+
+	priceFloat, err := strconv.ParseFloat(price, 64)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"price": price,
+		}).Error("convert price to float64")
+		panic(fmt.Sprintf("%v", price))
+	}
+
+	log.WithFields(log.Fields{
+		"respSize": len(resp.PriceList),
+		// "resp":           resp.PriceList,
+		"productCode":    productCode,
+		"priceDimension": priceDimensions,
+		"price":          price,
+	}).Info("getMonthlyPriceOfInstance")
+
+	return ec2price{priceFloat, priceUnit}
+
+}
+
+// this check is super naive as it checks the instances that are running RIGHT now (which might ignore any peaks or overall usage per month)
+// but we check it against utilization from all of the instances
 func getMonthlyPriceOfInstance(client *pricing.Pricing, machineType string, region string) float64 {
 
 	input := pricing.GetProductsInput{
@@ -136,11 +198,6 @@ func getMonthlyPriceOfInstance(client *pricing.Pricing, machineType string, regi
 				Type:  aws.String("TERM_MATCH"),
 				Value: aws.String("Shared"),
 			},
-			// {
-			// 	Field: aws.String("sku"),
-			// 	Type:  aws.String("TERM_MATCH"),
-			// 	Value: aws.String("6C86BEPQVG73ZGGR"),
-			// },
 		},
 		FormatVersion: aws.String("aws_v1"),
 		MaxResults:    aws.Int64(10),
@@ -162,16 +219,23 @@ func getMonthlyPriceOfInstance(client *pricing.Pricing, machineType string, regi
 		return 0
 	}
 
-	//pricelistJSON, err := json.MarshalIndent(resp.PriceList, "", "  ")
+	// fmt.Printf("------------\npriceList: %#v\n\n", resp.PriceList)
 
-	log.WithFields(log.Fields{
-		"respSize":                  len(resp.PriceList),
-		"resp":                      resp.PriceList,
-		"resp.PriceList['product']": resp.PriceList[0]["terms"],
-	}).Info("getMonthlyPriceOfInstance")
+	// data, err := json.MarshalIndent(resp.PriceList, "", "\t")
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+	// fmt.Printf("%s\n", data)
 
-	// TODO: implement this
-	return 0.0832 * 24 * 30
+	// var response awspricing.PricingResponse
+
+	// json.Unmarshal([]byte(resp.GoString()), &response)
+
+	price := extractPrice(resp)
+
+	pricePerMonth := getPricePerMonth(price)
+
+	return pricePerMonth
 }
 
 func getEC2InstancesPriceWithinRegion(ec2client *ec2.EC2, pricingClient *pricing.Pricing, region string) float64 {
@@ -289,5 +353,4 @@ func lowcpuutilization(event check.Event) (*checkcompleted.Event, error) {
 	}).Info("lowcpuutilization check finished")
 
 	return &outputReport, nil
-
 }

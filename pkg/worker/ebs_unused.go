@@ -4,6 +4,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ec2"
+	"github.com/aws/aws-sdk-go/service/ec2/ec2iface"
 	"github.com/pipetail/cloudlint/pkg/awsregions"
 	"github.com/pipetail/cloudlint/pkg/check"
 	"github.com/pipetail/cloudlint/pkg/checkcompleted"
@@ -48,12 +49,12 @@ func GetVolumesPrice(volumes []*ec2.Volume) float64 {
 	return totalMonthlyPrice
 }
 
-func getVolumesWithinRegion(ec2client *ec2.EC2) []*ec2.Volume {
+func getVolumesWithinRegion(client ec2iface.EC2API) []*ec2.Volume {
 
 	volumeParams := &ec2.DescribeVolumesInput{}
 
 	// Call to get detailed information on each volume
-	volumes, _ := ec2client.DescribeVolumes(volumeParams)
+	volumes, _ := client.DescribeVolumes(volumeParams)
 
 	return volumes.Volumes
 }

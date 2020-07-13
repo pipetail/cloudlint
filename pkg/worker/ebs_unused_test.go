@@ -9,6 +9,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/ec2"
+	"github.com/aws/aws-sdk-go/service/ec2/ec2iface"
 )
 
 func (m *MockEC2Client) DescribeVolumes2(*ec2.DescribeVolumesInput) (*ec2.DescribeVolumesOutput, error) {
@@ -59,7 +60,7 @@ func (m *MockEC2Client) DescribeVolumes2(*ec2.DescribeVolumesInput) (*ec2.Descri
 	return output, nil
 }
 
-func (m *MockEC2Client) DescribeVolumes(*ec2.DescribeVolumesInput) (*ec2.DescribeVolumesOutput, error) {
+func (m *MockEC2Client) DescribeVolumes(input *ec2.DescribeVolumesInput) (*ec2.DescribeVolumesOutput, error) {
 	// mock response/functionality
 
 	volumeID := "vol-0244f4fb5eb3e997e"
@@ -137,12 +138,11 @@ func (m *MockEC2Client) DescribeVolumes(*ec2.DescribeVolumesInput) (*ec2.Describ
 		},
 	}
 
-	// if *m.Config.Region == "eu-central-1" {
-	// 	volumesOutput.Volumes
-	// }
+	if m.region == "eu-central-1" {
+		return m.DescribeVolumes2(input)
+	}
 
 	return volumesOutput, nil
-	//return nil, nil
 }
 
 var Eps float64 = 0.00000001
@@ -184,10 +184,11 @@ func TestFilterDetachedVolumes(t *testing.T) {
 
 func TestGetVolumesPrice(t *testing.T) {
 
-	mockSvc := &MockEC2Client{}
+	mockSvc := &MockEC2Client{region: "us-east-1"}
+	mockSvc2 := &MockEC2Client{region: "eu-central-1"}
 
 	volumess, _ := mockSvc.DescribeVolumes(nil)
-	volumess2, _ := mockSvc.DescribeVolumes2(nil)
+	volumess2, _ := mockSvc2.DescribeVolumes(nil)
 
 	volumes := filterDetachedVolumes(volumess.Volumes)
 	volumes2 := filterDetachedVolumes(volumess2.Volumes)
@@ -204,6 +205,27 @@ func TestGetVolumesPrice(t *testing.T) {
 		total := GetVolumesPrice(table.x)
 		if !FloatEquals(total, table.y) {
 			t.Errorf("TotalPrice of volumes was incorrect, got: %f, want: %f.", total, table.y)
+		}
+	}
+}
+
+func TestGetVolumesWithinRegion(t *testing.T) {
+
+	mockSvc := &MockEC2Client{region: "eu-central-1"}
+	mockSvc2 := &MockEC2Client{region: "us-east-1"}
+
+	tables := []struct {
+		x ec2iface.EC2API
+		y int
+	}{
+		{mockSvc, 2},
+		{mockSvc2, 3},
+	}
+
+	for _, table := range tables {
+		total := len(getVolumesWithinRegion(table.x))
+		if total != table.y {
+			t.Errorf("TotalPrice of volumes was incorrect, got: %d, want: %d.", total, table.y)
 		}
 	}
 }

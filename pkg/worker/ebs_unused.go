@@ -51,12 +51,13 @@ func GetVolumesPrice(volumes []*ec2.Volume) float64 {
 
 func getVolumesWithinRegion(client ec2iface.EC2API) []*ec2.Volume {
 
+	// we need all volumes, we will filter them later on
 	volumeParams := &ec2.DescribeVolumesInput{}
 
 	// Call to get detailed information on each volume
-	volumes, _ := client.DescribeVolumes(volumeParams)
+	res, _ := client.DescribeVolumes(volumeParams)
 
-	return volumes.Volumes
+	return res.Volumes
 }
 
 func filterDetachedVolumes(input []*ec2.Volume) []*ec2.Volume {

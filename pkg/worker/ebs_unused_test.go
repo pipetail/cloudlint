@@ -156,10 +156,11 @@ func FloatEquals(a, b float64) bool {
 
 func TestFilterDetachedVolumes(t *testing.T) {
 
-	mockSvc := &MockEC2Client{}
+	mockSvc := &MockEC2Client{region: "us-east-1"}
+	mockSvc2 := &MockEC2Client{region: "eu-central-1"}
 
 	volumess, _ := mockSvc.DescribeVolumes(nil)
-	volumess2, _ := mockSvc.DescribeVolumes2(nil)
+	volumess2, _ := mockSvc2.DescribeVolumes(nil)
 
 	volumes := volumess.Volumes
 	volumes2 := volumess2.Volumes

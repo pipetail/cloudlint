@@ -4,7 +4,6 @@ go 1.12
 
 require (
 	github.com/aws/aws-sdk-go v1.30.13
-	github.com/getlantern/deepcopy v0.0.0-20160317154340-7f45deb8130a // indirect
 	github.com/go-openapi/strfmt v0.19.3 // indirect
 	github.com/google/go-cmp v0.4.0 // indirect
 	github.com/google/uuid v1.1.1
@@ -18,9 +17,9 @@ require (
 	golang.org/x/net v0.0.0-20200226121028-0de0cce0169b // indirect
 	golang.org/x/sys v0.0.0-20200122134326-e047566fdf82 // indirect
 	golang.org/x/text v0.3.2 // indirect
-	golang.org/x/tools v0.0.0-20200612220849-54c614fe050c // indirect
 	gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15 // indirect
 	gopkg.in/yaml.v2 v2.2.8 // indirect
+	""
 )
 
 replace github.com/pipetail/cloudlint/pkg/check v0.0.0 => ../pkg/check

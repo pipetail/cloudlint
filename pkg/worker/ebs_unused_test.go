@@ -3,7 +3,8 @@ package worker
 import (
 	"encoding/json"
 	"fmt"
-	"math"
+    "github.com/aws/aws-sdk-go/service/pricing"
+    "math"
 	"testing"
 	"time"
 
@@ -145,6 +146,47 @@ func (m *MockEC2Client) DescribeVolumes(input *ec2.DescribeVolumesInput) (*ec2.D
 	return volumesOutput, nil
 }
 
+func (m *MockPricingClient) GetProducts(*pricing.GetProductsInput) (*pricing.GetProductsOutput, error) {
+    priceList := make([]aws.JSONValue, 0)
+
+    vas := &aws.JSONValue{}
+    payload := `
+        {
+		"terms": {
+			"OnDemand": {
+				"XUZVGXG9M6A44GDS.JRTCKXETXF": {
+					"effectiveDate": "2020-06-01T00:00:00Z",
+					"offerTermCode": "JRTCKXETXF",
+					"priceDimensions": {
+						"XUZVGXG9M6A44GDS.JRTCKXETXF.6YS6EN2CT7": {
+							"pricePerUnit": {
+								"USD": "0.119"
+							},
+							"unit": "GB-Mo"
+						}
+					},
+					"sku": "XUZVGXG9M6A44GDS",
+					"termAttributes": {}
+				}
+			}
+		},
+		"version": "20200618221809"
+	}
+`
+    if err := json.Unmarshal([]byte(payload), &vas); err != nil {
+        panic("failed to unmarshal JSONValue, " + err.Error())
+    }
+
+    priceList = append(priceList, *vas)
+
+    productsOutput := &pricing.GetProductsOutput{
+        FormatVersion: aws.String("aws_v1"),
+        PriceList: priceList,
+    }
+
+    return productsOutput, nil
+}
+
 var Eps float64 = 0.00000001
 
 func FloatEquals(a, b float64) bool {
@@ -188,6 +230,8 @@ func TestGetVolumesPrice(t *testing.T) {
 	mockSvc := &MockEC2Client{region: "us-east-1"}
 	mockSvc2 := &MockEC2Client{region: "eu-central-1"}
 
+	mockPricing := &MockPricingClient{}
+
 	volumess, _ := mockSvc.DescribeVolumes(nil)
 	volumess2, _ := mockSvc2.DescribeVolumes(nil)
 
@@ -203,7 +247,7 @@ func TestGetVolumesPrice(t *testing.T) {
 	}
 
 	for _, table := range tables {
-		total := GetVolumesPrice(table.x)
+		total := GetVolumesPrice(table.x, mockPricing, "us-east-1")
 		if !FloatEquals(total, table.y) {
 			t.Errorf("TotalPrice of volumes was incorrect, got: %f, want: %f.", total, table.y)
 		}

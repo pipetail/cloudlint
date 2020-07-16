@@ -1,19 +1,16 @@
 package worker
 
 import (
-	"fmt"
-	"reflect"
-	"strconv"
-
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/cloudwatch"
-	"github.com/aws/aws-sdk-go/service/ec2"
-	"github.com/aws/aws-sdk-go/service/pricing"
-	"github.com/pipetail/cloudlint/internal/utils"
-	"github.com/pipetail/cloudlint/pkg/awsregions"
-	"github.com/pipetail/cloudlint/pkg/check"
-	"github.com/pipetail/cloudlint/pkg/checkcompleted"
-	log "github.com/sirupsen/logrus"
+    "github.com/aws/aws-sdk-go/aws"
+    "github.com/aws/aws-sdk-go/service/cloudwatch"
+    "github.com/aws/aws-sdk-go/service/ec2"
+    "github.com/aws/aws-sdk-go/service/pricing"
+    "github.com/pipetail/cloudlint/internal/utils"
+    "github.com/pipetail/cloudlint/pkg/awspricing"
+    "github.com/pipetail/cloudlint/pkg/awsregions"
+    "github.com/pipetail/cloudlint/pkg/check"
+    "github.com/pipetail/cloudlint/pkg/checkcompleted"
+    log "github.com/sirupsen/logrus"
 )
 
 // WeightedAverage stores weighted average
@@ -99,145 +96,6 @@ func getCPUUtilizationWithinRegion(client *cloudwatch.CloudWatch) *WeightedAvera
 	return result
 }
 
-func getPricePerMonth(price ec2price) float64 {
-	if price.unit != "Hrs" {
-
-		log.WithFields(log.Fields{
-			"priceUnit": price.unit,
-		}).Error("priceUnit is not Hrs")
-
-		panic(fmt.Sprintf("%v", price.unit))
-	}
-
-	return price.value * 24 * 30
-}
-
-type ec2price struct {
-	value float64
-	unit  string
-}
-
-func extractPrice(resp *pricing.GetProductsOutput) ec2price {
-
-	// priceList[0] seems wrong
-	// when checking the data, it seems like the index 0 always has the most used OnDemand options, while index 1 and 2 have Unused Reservation and Reservation (respectively)
-	// we shouldn't rely on that though...
-	onDemand := resp.PriceList[0]["terms"].(map[string]interface{})["OnDemand"]
-
-	keys := reflect.ValueOf(onDemand).MapKeys()
-
-	productCode := keys[0]
-
-	priceDimensions := onDemand.(map[string]interface{})[productCode.String()].(map[string]interface{})["priceDimensions"]
-
-	pcKeys := reflect.ValueOf(priceDimensions).MapKeys()
-
-	priceDimensionsKey := pcKeys[0]
-
-	price := priceDimensions.(map[string]interface{})[priceDimensionsKey.String()].(map[string]interface{})["pricePerUnit"].(map[string]interface{})["USD"].(string)
-	priceUnit := priceDimensions.(map[string]interface{})[priceDimensionsKey.String()].(map[string]interface{})["unit"].(string)
-
-	priceFloat, err := strconv.ParseFloat(price, 64)
-	if err != nil {
-		log.WithFields(log.Fields{
-			"price": price,
-		}).Error("convert price to float64")
-		panic(fmt.Sprintf("%v", price))
-	}
-
-	log.WithFields(log.Fields{
-		"respSize": len(resp.PriceList),
-		// "resp":           resp.PriceList,
-		"productCode":    productCode,
-		"priceDimension": priceDimensions,
-		"price":          price,
-	}).Info("getMonthlyPriceOfInstance")
-
-	return ec2price{priceFloat, priceUnit}
-
-}
-
-// this check is super naive as it checks the instances that are running RIGHT now (which might ignore any peaks or overall usage per month)
-// but we check it against utilization from all of the instances
-func getMonthlyPriceOfInstance(client *pricing.Pricing, machineType string, region string) float64 {
-
-	input := pricing.GetProductsInput{
-		Filters: []*pricing.Filter{
-			{
-				Field: aws.String("ServiceCode"),
-				Type:  aws.String("TERM_MATCH"),
-				Value: aws.String("AmazonEC2"),
-			},
-			{
-				Field: aws.String("Location"),
-				Type:  aws.String("TERM_MATCH"),
-				Value: aws.String(utils.GetLocationForRegion(region)),
-			},
-			{
-				Field: aws.String("instanceType"),
-				Type:  aws.String("TERM_MATCH"),
-				Value: aws.String(machineType),
-			},
-			// {
-			// 	Field: aws.String("termType"),
-			// 	Type:  aws.String("TERM_MATCH"),
-			// 	Value: aws.String("OnDemand"),
-			// },
-			{
-				Field: aws.String("operatingSystem"),
-				Type:  aws.String("TERM_MATCH"),
-				Value: aws.String("Linux"),
-			},
-			{
-				Field: aws.String("preInstalledSw"),
-				Type:  aws.String("TERM_MATCH"),
-				Value: aws.String("NA"),
-			},
-			{
-				Field: aws.String("tenancy"),
-				Type:  aws.String("TERM_MATCH"),
-				Value: aws.String("Shared"),
-			},
-		},
-		FormatVersion: aws.String("aws_v1"),
-		MaxResults:    aws.Int64(10),
-	}
-
-	// this is a workaround for a bug: https://github.com/aws/aws-sdk-go/issues/3323
-	input.SetServiceCode("AmazonEC2")
-
-	log.WithFields(log.Fields{
-		"input": input,
-	}).Info("getMonthlyPriceOfInstance")
-
-	resp, err := client.GetProducts(&input)
-
-	if err != nil {
-		log.WithFields(log.Fields{
-			"err": err,
-		}).Error("checking getMonthlyPriceOfInstance")
-		return 0
-	}
-
-	// fmt.Printf("------------\npriceList: %#v\n\n", resp.PriceList)
-
-	// data, err := json.MarshalIndent(resp.PriceList, "", "\t")
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-	// fmt.Printf("%s\n", data)
-
-	// var response awspricing.PricingResponse
-
-	// json.Unmarshal([]byte(resp.GoString()), &response)
-
-	price := extractPrice(resp)
-
-	pricePerMonth := getPricePerMonth(price)
-
-	return pricePerMonth
-}
-
 func getEC2InstancesPriceWithinRegion(ec2client *ec2.EC2, pricingClient *pricing.Pricing, region string) float64 {
 
 	price := 0.0
@@ -273,7 +131,7 @@ func getEC2InstancesPriceWithinRegion(ec2client *ec2.EC2, pricingClient *pricing
 
 		for _, inst := range resp.Reservations[idx].Instances {
 
-			price += getMonthlyPriceOfInstance(pricingClient, *inst.InstanceType, region)
+            price += awspricing.GetMonthlyPriceOfInstance(pricingClient, *inst.InstanceType, region)
 			log.WithFields(log.Fields{
 				"InstanceId": *inst.InstanceId,
 			}).Info("getEC2InstancesPriceWithinRegion")

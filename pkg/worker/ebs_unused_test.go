@@ -149,9 +149,7 @@ func (m *MockEC2Client) DescribeVolumes(input *ec2.DescribeVolumesInput) (*ec2.D
 func (m *MockPricingClient) GetProducts(*pricing.GetProductsInput) (*pricing.GetProductsOutput, error) {
     priceList := make([]aws.JSONValue, 0)
 
-    vas := &aws.JSONValue{}
-    payload := `
-        {
+    terms := `{
 		"terms": {
 			"OnDemand": {
 				"XUZVGXG9M6A44GDS.JRTCKXETXF": {
@@ -171,13 +169,14 @@ func (m *MockPricingClient) GetProducts(*pricing.GetProductsInput) (*pricing.Get
 			}
 		},
 		"version": "20200618221809"
-	}
-`
-    if err := json.Unmarshal([]byte(payload), &vas); err != nil {
+	}`
+
+    price := &aws.JSONValue{}
+    if err := json.Unmarshal([]byte(terms), &price); err != nil {
         panic("failed to unmarshal JSONValue, " + err.Error())
     }
 
-    priceList = append(priceList, *vas)
+    priceList = append(priceList, *price)
 
     productsOutput := &pricing.GetProductsOutput{
         FormatVersion: aws.String("aws_v1"),
@@ -227,8 +226,11 @@ func TestFilterDetachedVolumes(t *testing.T) {
 
 func TestGetVolumesPrice(t *testing.T) {
 
-	mockSvc := &MockEC2Client{region: "us-east-1"}
-	mockSvc2 := &MockEC2Client{region: "eu-central-1"}
+    region1 := "us-east-1"
+    region2 := "eu-central-1"
+
+    mockSvc := &MockEC2Client{region: region1}
+    mockSvc2 := &MockEC2Client{region: region2}
 
 	mockPricing := &MockPricingClient{}
 
@@ -241,13 +243,14 @@ func TestGetVolumesPrice(t *testing.T) {
 	tables := []struct {
 		x []*ec2.Volume
 		y float64
+		region string
 	}{
-		{volumes, 3.57},
-		{volumes2, 11.9},
+		{volumes, 3.57, region1},
+		{volumes2, 11.9, region2},
 	}
 
 	for _, table := range tables {
-		total := GetVolumesPrice(table.x, mockPricing, "us-east-1")
+		total := GetVolumesPrice(table.x, mockPricing, table.region)
 		if !FloatEquals(total, table.y) {
 			t.Errorf("TotalPrice of volumes was incorrect, got: %f, want: %f.", total, table.y)
 		}

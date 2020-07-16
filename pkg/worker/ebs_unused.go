@@ -5,6 +5,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/aws/aws-sdk-go/service/ec2/ec2iface"
+	"github.com/aws/aws-sdk-go/service/pricing/pricingiface"
 	"github.com/pipetail/cloudlint/pkg/awsregions"
 	"github.com/pipetail/cloudlint/pkg/check"
 	"github.com/pipetail/cloudlint/pkg/checkcompleted"
@@ -19,7 +20,7 @@ type Parameters struct {
 }
 
 // GetVolumesPrice sums the final price for all the volumes
-func GetVolumesPrice(volumes []*ec2.Volume) float64 {
+func GetVolumesPrice(volumes []*ec2.Volume, client pricingiface.PricingAPI, region string) float64 {
 
 	var totalSize int64 = 0
 	var totalMonthlyPrice float64 = 0
@@ -27,6 +28,7 @@ func GetVolumesPrice(volumes []*ec2.Volume) float64 {
 	for _, volume := range volumes {
 
 		totalSize += *volume.Size
+
 		//countDisks++
 
 		// https://aws.amazon.com/ebs/pricing/
@@ -83,6 +85,8 @@ func ebsunused(event check.Event) (*checkcompleted.Event, error) {
 
 	auth := event.Payload.AWSAuth
 
+	pricingClient := NewPricingClient(auth)
+
 	//var countDisks int64 = 0
 	var totalMonthlyPrice float64 = 0
 
@@ -102,7 +106,7 @@ func ebsunused(event check.Event) (*checkcompleted.Event, error) {
 		detachedVolumes := filterDetachedVolumes(volumes)
 
 		// TODO: check if volumes.nextToken is nil
-		totalMonthlyPrice += GetVolumesPrice(detachedVolumes)
+		totalMonthlyPrice += GetVolumesPrice(detachedVolumes, pricingClient, region)
 	}
 
 	// TODO: make this relative to total spend

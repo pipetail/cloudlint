@@ -1,12 +1,17 @@
-package worker
+package awspricing
 
 import (
 	"encoding/json"
 	"fmt"
-	"testing"
-
 	"github.com/aws/aws-sdk-go/service/pricing"
+	"github.com/aws/aws-sdk-go/service/pricing/pricingiface"
+	"testing"
 )
+
+// MockPricingClient mocks Pricing API client for unit testing purposes
+type MockPricingClient struct {
+	pricingiface.PricingAPI
+}
 
 func TestExtractPrice(t *testing.T) {
 

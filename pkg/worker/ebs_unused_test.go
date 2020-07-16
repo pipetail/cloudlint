@@ -3,10 +3,11 @@ package worker
 import (
 	"encoding/json"
 	"fmt"
-    "github.com/aws/aws-sdk-go/service/pricing"
-    "math"
+	"math"
 	"testing"
 	"time"
+
+	"github.com/aws/aws-sdk-go/service/pricing"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/ec2"
@@ -147,9 +148,11 @@ func (m *MockEC2Client) DescribeVolumes(input *ec2.DescribeVolumesInput) (*ec2.D
 }
 
 func (m *MockPricingClient) GetProducts(*pricing.GetProductsInput) (*pricing.GetProductsOutput, error) {
-    priceList := make([]aws.JSONValue, 0)
+	priceList := make([]aws.JSONValue, 0)
 
-    terms := `{
+	vas := &aws.JSONValue{}
+	payload := `
+        {
 		"terms": {
 			"OnDemand": {
 				"XUZVGXG9M6A44GDS.JRTCKXETXF": {
@@ -169,21 +172,20 @@ func (m *MockPricingClient) GetProducts(*pricing.GetProductsInput) (*pricing.Get
 			}
 		},
 		"version": "20200618221809"
-	}`
+	}
+`
+	if err := json.Unmarshal([]byte(payload), &vas); err != nil {
+		panic("failed to unmarshal JSONValue, " + err.Error())
+	}
 
-    price := &aws.JSONValue{}
-    if err := json.Unmarshal([]byte(terms), &price); err != nil {
-        panic("failed to unmarshal JSONValue, " + err.Error())
-    }
+	priceList = append(priceList, *vas)
 
-    priceList = append(priceList, *price)
+	productsOutput := &pricing.GetProductsOutput{
+		FormatVersion: aws.String("aws_v1"),
+		PriceList:     priceList,
+	}
 
-    productsOutput := &pricing.GetProductsOutput{
-        FormatVersion: aws.String("aws_v1"),
-        PriceList: priceList,
-    }
-
-    return productsOutput, nil
+	return productsOutput, nil
 }
 
 var Eps float64 = 0.00000001
@@ -226,11 +228,11 @@ func TestFilterDetachedVolumes(t *testing.T) {
 
 func TestGetVolumesPrice(t *testing.T) {
 
-    region1 := "us-east-1"
-    region2 := "eu-central-1"
+	region1 := "us-east-1"
+	region2 := "eu-central-1"
 
-    mockSvc := &MockEC2Client{region: region1}
-    mockSvc2 := &MockEC2Client{region: region2}
+	mockSvc := &MockEC2Client{region: region1}
+	mockSvc2 := &MockEC2Client{region: region2}
 
 	mockPricing := &MockPricingClient{}
 
@@ -241,8 +243,8 @@ func TestGetVolumesPrice(t *testing.T) {
 	volumes2 := filterDetachedVolumes(volumess2.Volumes)
 
 	tables := []struct {
-		x []*ec2.Volume
-		y float64
+		x      []*ec2.Volume
+		y      float64
 		region string
 	}{
 		{volumes, 3.57, region1},

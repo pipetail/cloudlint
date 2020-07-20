@@ -30,7 +30,7 @@ func GetVolumesPrice(volumes []*ec2.Volume, client pricingiface.PricingAPI, regi
 
 		totalSize += *volume.Size
 
-        totalMonthlyPrice += float64(*volume.Size) * awspricing.GetPriceOfValue(client, *volume.VolumeType, region)
+        totalMonthlyPrice += float64(*volume.Size) * awspricing.GetPriceOfVolume(client, *volume.VolumeType, region)
     }
 
 	return totalMonthlyPrice

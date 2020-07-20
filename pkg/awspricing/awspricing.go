@@ -109,7 +109,7 @@ func getPrice(client pricingiface.PricingAPI, filters []*pricing.Filter) float64
 	input := pricing.GetProductsInput{
 		Filters:       filters,
 		FormatVersion: aws.String("aws_v1"),
-		MaxResults:    aws.Int64(10),
+		MaxResults:    aws.Int64(1),
 	}
 
 	// this is a workaround for a bug: https://github.com/aws/aws-sdk-go/issues/3323

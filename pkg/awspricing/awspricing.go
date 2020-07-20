@@ -2,12 +2,13 @@ package awspricing
 
 import (
 	"fmt"
+	"strconv"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/pricing"
 	"github.com/aws/aws-sdk-go/service/pricing/pricingiface"
 	"github.com/pipetail/cloudlint/internal/utils"
 	log "github.com/sirupsen/logrus"
-	"strconv"
 )
 
 type ec2price struct {
@@ -59,7 +60,6 @@ func extractPrice(resp *pricing.GetProductsOutput) ec2price {
 	//keys := reflect.ValueOf(onDemand).MapKeys()
 	keys := onDemand.(map[string]interface{})
 
-
 	// check if we can extract only one product key
 	if len(keys) != 1 {
 		log.WithFields(log.Fields{
@@ -109,7 +109,7 @@ func getPrice(client pricingiface.PricingAPI, filters []*pricing.Filter) float64
 	input := pricing.GetProductsInput{
 		Filters:       filters,
 		FormatVersion: aws.String("aws_v1"),
-		MaxResults:    aws.Int64(1),
+		MaxResults:    aws.Int64(10),
 	}
 
 	// this is a workaround for a bug: https://github.com/aws/aws-sdk-go/issues/3323
@@ -141,97 +141,46 @@ func getPrice(client pricingiface.PricingAPI, filters []*pricing.Filter) float64
 
 // GetMonthlyPriceOfInstance check is super naive as it checks the instances that are running RIGHT now (which might ignore any peaks or overall usage per month)
 // but we check it against utilization from all of the instances
-func GetMonthlyPriceOfInstance(client *pricing.Pricing, machineType string, region string) float64 {
-
-	input := pricing.GetProductsInput{
-		Filters: []*pricing.Filter{
-			{
-				Field: aws.String("ServiceCode"),
-				Type:  aws.String("TERM_MATCH"),
-				Value: aws.String("AmazonEC2"),
-			},
-			{
-				Field: aws.String("Location"),
-				Type:  aws.String("TERM_MATCH"),
-				Value: aws.String(utils.GetLocationForRegion(region)),
-			},
-			{
-				Field: aws.String("instanceType"),
-				Type:  aws.String("TERM_MATCH"),
-				Value: aws.String(machineType),
-			},
-			// {
-			// 	Field: aws.String("termType"),
-			// 	Type:  aws.String("TERM_MATCH"),
-			// 	Value: aws.String("OnDemand"),
-			// },
-			{
-				Field: aws.String("operatingSystem"),
-				Type:  aws.String("TERM_MATCH"),
-				Value: aws.String("Linux"),
-			},
-			{
-				Field: aws.String("preInstalledSw"),
-				Type:  aws.String("TERM_MATCH"),
-				Value: aws.String("NA"),
-			},
-			{
-				Field: aws.String("tenancy"),
-				Type:  aws.String("TERM_MATCH"),
-				Value: aws.String("Shared"),
-			},
-			// {
-			// 	Field: aws.String("operation"),
-			// 	Type:  aws.String("TERM_MATCH"),
-			// 	Value: aws.String("RunInstance"),
-			// },
-			{
-				Field: aws.String("capacitystatus"),
-				Type:  aws.String("TERM_MATCH"),
-				Value: aws.String("Used"),
-			},
+func GetMonthlyPriceOfInstance(client pricingiface.PricingAPI, machineType string, region string) float64 {
+	filters := []*pricing.Filter{
+		{
+			Field: aws.String("ServiceCode"),
+			Type:  aws.String("TERM_MATCH"),
+			Value: aws.String("AmazonEC2"),
 		},
-		FormatVersion: aws.String("aws_v1"),
-		MaxResults:    aws.Int64(10),
+		{
+			Field: aws.String("Location"),
+			Type:  aws.String("TERM_MATCH"),
+			Value: aws.String(utils.GetLocationForRegion(region)),
+		},
+		{
+			Field: aws.String("instanceType"),
+			Type:  aws.String("TERM_MATCH"),
+			Value: aws.String(machineType),
+		},
+		{
+			Field: aws.String("operatingSystem"),
+			Type:  aws.String("TERM_MATCH"),
+			Value: aws.String("Linux"),
+		},
+		{
+			Field: aws.String("preInstalledSw"),
+			Type:  aws.String("TERM_MATCH"),
+			Value: aws.String("NA"),
+		},
+		{
+			Field: aws.String("tenancy"),
+			Type:  aws.String("TERM_MATCH"),
+			Value: aws.String("Shared"),
+		},
+		{
+			Field: aws.String("capacitystatus"),
+			Type:  aws.String("TERM_MATCH"),
+			Value: aws.String("Used"),
+		},
 	}
 
-	// this is a workaround for a bug: https://github.com/aws/aws-sdk-go/issues/3323
-	input.SetServiceCode("AmazonEC2")
-
-	log.WithFields(log.Fields{
-		"input": input,
-	}).Info("getMonthlyPriceOfInstance")
-
-	resp, err := client.GetProducts(&input)
-
-	if err != nil {
-		log.WithFields(log.Fields{
-			"err": err,
-		}).Error("checking getMonthlyPriceOfInstance")
-		return 0
-	}
-
-	// fmt.Printf("------------\npriceList: %#v\n\n", resp.PriceList)
-
-	// data, err := json.MarshalIndent(resp, "", "\t")
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-	// fmt.Printf("%s\n", data)
-
-	// var response awspricing.PricingResponse
-
-	// json.Unmarshal([]byte(resp.GoString()), &response)
-
-	price := extractPrice(resp)
-
-	pricePerMonth, err := getPricePerMonth(price)
-
-	if err != nil {
-		return 0 // TODO: we should return the err!
-	}
-
-	return pricePerMonth
+	return getPrice(client, filters)
 }
 
 // GetPriceOfValue price of the volume type within the region
@@ -250,7 +199,7 @@ func GetPriceOfValue(client pricingiface.PricingAPI, volumeType string, region s
 		{
 			Field: aws.String("volumeType"),
 			Type:  aws.String("TERM_MATCH"),
-			Value: aws.String(volumeType),
+			Value: aws.String(utils.TranslateVolumeType(volumeType)),
 		},
 	}
 

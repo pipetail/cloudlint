@@ -1,7 +1,13 @@
 package awspricing
 
 import (
+<<<<<<< HEAD
 	"fmt"
+=======
+	"encoding/json"
+	"fmt"
+	"reflect"
+>>>>>>> fmt and TranslateVolumeType
 	"strconv"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -16,6 +22,7 @@ type ec2price struct {
 	unit  string
 }
 
+<<<<<<< HEAD
 func getPricePerMonth(price ec2price) (float64, error) {
 	if price.value < 0 {
 		return 0, nil
@@ -42,10 +49,26 @@ func getSomeKey(m map[string]interface{}) string {
 		return k
 	}
 	return ""
+=======
+func getPricePerMonth(price ec2price) float64 {
+	switch price.unit {
+	case "Hrs":
+		return price.value * 24 * 30
+	case "GB-Mo":
+		return price.value
+	default:
+		log.WithFields(log.Fields{
+			"priceUnit": price.unit,
+		}).Error("priceUnit is not Hrs")
+
+		panic(fmt.Sprintf("%v", price.unit))
+	}
+>>>>>>> fmt and TranslateVolumeType
 }
 
 func extractPrice(resp *pricing.GetProductsOutput) ec2price {
 
+<<<<<<< HEAD
 	// check if there is exactly one item in the PriceList
 	if len(resp.PriceList) != 1 {
 		log.WithFields(log.Fields{
@@ -79,6 +102,34 @@ func extractPrice(resp *pricing.GetProductsOutput) ec2price {
 	price := priceDimensions.(map[string]interface{})[priceDimensionsKey].(map[string]interface{})["pricePerUnit"].(map[string]interface{})["USD"].(string)
 
 	priceUnit := priceDimensions.(map[string]interface{})[priceDimensionsKey].(map[string]interface{})["unit"].(string)
+=======
+	fmt.Printf("------------\npriceList: %#v\n\n", resp.PriceList)
+
+	data, err := json.MarshalIndent(resp.PriceList, "", "\t")
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Printf("%s\n", data)
+	fmt.Printf("------------\npriceList: %#v\n\n", resp.PriceList)
+
+	// priceList[0] seems wrong
+	// when checking the data, it seems like the index 0 always has the most used OnDemand options, while index 1 and 2 have Unused Reservation and Reservation (respectively)
+	// we shouldn't rely on that though...
+	onDemand := resp.PriceList[0]["terms"].(map[string]interface{})["OnDemand"]
+
+	keys := reflect.ValueOf(onDemand).MapKeys()
+
+	productCode := keys[0]
+
+	priceDimensions := onDemand.(map[string]interface{})[productCode.String()].(map[string]interface{})["priceDimensions"]
+
+	pcKeys := reflect.ValueOf(priceDimensions).MapKeys()
+
+	priceDimensionsKey := pcKeys[0]
+
+	price := priceDimensions.(map[string]interface{})[priceDimensionsKey.String()].(map[string]interface{})["pricePerUnit"].(map[string]interface{})["USD"].(string)
+	priceUnit := priceDimensions.(map[string]interface{})[priceDimensionsKey.String()].(map[string]interface{})["unit"].(string)
+>>>>>>> fmt and TranslateVolumeType
 
 	priceFloat, err := strconv.ParseFloat(price, 64)
 	if err != nil {
@@ -94,7 +145,10 @@ func extractPrice(resp *pricing.GetProductsOutput) ec2price {
 		"productCode":    productCode,
 		"priceDimension": priceDimensions,
 		"price":          price,
+<<<<<<< HEAD
 		"len(keys)":      len(keys),
+=======
+>>>>>>> fmt and TranslateVolumeType
 	}).Info("getMonthlyPriceOfInstance")
 
 	return ec2price{priceFloat, priceUnit}
@@ -109,7 +163,11 @@ func getPrice(client pricingiface.PricingAPI, filters []*pricing.Filter) float64
 	input := pricing.GetProductsInput{
 		Filters:       filters,
 		FormatVersion: aws.String("aws_v1"),
+<<<<<<< HEAD
 		MaxResults:    aws.Int64(10),
+=======
+		MaxResults:    aws.Int64(1),
+>>>>>>> fmt and TranslateVolumeType
 	}
 
 	// this is a workaround for a bug: https://github.com/aws/aws-sdk-go/issues/3323
@@ -158,6 +216,11 @@ func GetMonthlyPriceOfInstance(client pricingiface.PricingAPI, machineType strin
 			Type:  aws.String("TERM_MATCH"),
 			Value: aws.String(machineType),
 		},
+		// {
+		// 	Field: aws.String("termType"),
+		// 	Type:  aws.String("TERM_MATCH"),
+		// 	Value: aws.String("OnDemand"),
+		// },
 		{
 			Field: aws.String("operatingSystem"),
 			Type:  aws.String("TERM_MATCH"),

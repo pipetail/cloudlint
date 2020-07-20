@@ -199,7 +199,7 @@ func GetPriceOfVolume(client pricingiface.PricingAPI, volumeType string, region 
 		{
 			Field: aws.String("volumeType"),
 			Type:  aws.String("TERM_MATCH"),
-			Value: aws.String(utils.TranslateVolumeType(volumeType)),
+			Value: aws.String(utils.ConvertVolumeTypeForPricing(volumeType)),
 		},
 	}
 

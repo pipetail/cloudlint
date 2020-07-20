@@ -33,3 +33,16 @@ func GetLocationForRegion(region string) (location string) {
 
 	return regionMap[region]
 }
+// ConvertVolumeTypeForPricing returns a volume like "General Purpose" for volume shortcut "gp2"
+func ConvertVolumeTypeForPricing(volumeType string) (location string) {
+
+	volumeTypes := map[string]string{
+		"gp2":      "General Purpose",
+		"io1":      "Provisioned IOPS",
+		"st1":      "Throughput Optimized HDD",
+		"sc1":      "Cold HDD",
+        "standard": "Magnetic",
+	}
+
+	return volumeTypes[volumeType]
+}

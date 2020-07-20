@@ -183,8 +183,8 @@ func GetMonthlyPriceOfInstance(client pricingiface.PricingAPI, machineType strin
 	return getPrice(client, filters)
 }
 
-// GetPriceOfValue price of the volume type within the region
-func GetPriceOfValue(client pricingiface.PricingAPI, volumeType string, region string) float64 {
+// GetPriceOfVolume price of the volume type within the region
+func GetPriceOfVolume(client pricingiface.PricingAPI, volumeType string, region string) float64 {
 	filters := []*pricing.Filter{
 		{
 			Field: aws.String("ServiceCode"),
@@ -199,7 +199,7 @@ func GetPriceOfValue(client pricingiface.PricingAPI, volumeType string, region s
 		{
 			Field: aws.String("volumeType"),
 			Type:  aws.String("TERM_MATCH"),
-			Value: aws.String(utils.TranslateVolumeType(volumeType)),
+			Value: aws.String(utils.ConvertVolumeTypeForPricing(volumeType)),
 		},
 	}
 

@@ -2,7 +2,6 @@ package worker
 
 import (
 	"fmt"
-	"reflect"
 	"strconv"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -99,17 +98,21 @@ func getCPUUtilizationWithinRegion(client *cloudwatch.CloudWatch) *WeightedAvera
 	return result
 }
 
-func getPricePerMonth(price ec2price) float64 {
+func getPricePerMonth(price ec2price) (float64, error) {
 	if price.unit != "Hrs" {
 
 		log.WithFields(log.Fields{
 			"priceUnit": price.unit,
 		}).Error("priceUnit is not Hrs")
 
-		panic(fmt.Sprintf("%v", price.unit))
+		return 0, fmt.Errorf("price has wrong unit: %s", price.unit)
 	}
 
-	return price.value * 24 * 30
+	if price.value < 0 {
+		return 0, nil
+	}
+
+	return price.value * 24 * 30, nil
 }
 
 type ec2price struct {
@@ -117,25 +120,49 @@ type ec2price struct {
 	unit  string
 }
 
+func getSomeKey(m map[string]interface{}) string {
+
+	// return the first key you find, we don't care which is that
+	for k := range m {
+		return k
+	}
+	return ""
+}
+
 func extractPrice(resp *pricing.GetProductsOutput) ec2price {
 
-	// priceList[0] seems wrong
-	// when checking the data, it seems like the index 0 always has the most used OnDemand options, while index 1 and 2 have Unused Reservation and Reservation (respectively)
-	// we shouldn't rely on that though...
+	// check if there is exactly one item in the PriceList
+	if len(resp.PriceList) != 1 {
+		log.WithFields(log.Fields{
+			"len(resp.PriceList)": len(resp.PriceList),
+		}).Error("only one item in PriceList expected")
+		panic(fmt.Sprintf("%v", resp.PriceList))
+	}
+
 	onDemand := resp.PriceList[0]["terms"].(map[string]interface{})["OnDemand"]
 
-	keys := reflect.ValueOf(onDemand).MapKeys()
+	// we will use getSomeKey so that we don't have to use reflect
+	//keys := reflect.ValueOf(onDemand).MapKeys()
+	keys := onDemand.(map[string]interface{})
 
-	productCode := keys[0]
+	// check if we can extract only one product key
+	if len(keys) != 1 {
+		log.WithFields(log.Fields{
+			"len(keys)": len(keys),
+		}).Error("only one Product Key expected")
+		panic(fmt.Sprintf("%v", keys))
+	}
 
-	priceDimensions := onDemand.(map[string]interface{})[productCode.String()].(map[string]interface{})["priceDimensions"]
+	productCode := getSomeKey(keys)
 
-	pcKeys := reflect.ValueOf(priceDimensions).MapKeys()
+	priceDimensions := onDemand.(map[string]interface{})[productCode].(map[string]interface{})["priceDimensions"]
 
-	priceDimensionsKey := pcKeys[0]
+	pcKeys := priceDimensions.(map[string]interface{})
 
-	price := priceDimensions.(map[string]interface{})[priceDimensionsKey.String()].(map[string]interface{})["pricePerUnit"].(map[string]interface{})["USD"].(string)
-	priceUnit := priceDimensions.(map[string]interface{})[priceDimensionsKey.String()].(map[string]interface{})["unit"].(string)
+	priceDimensionsKey := getSomeKey(pcKeys)
+
+	price := priceDimensions.(map[string]interface{})[priceDimensionsKey].(map[string]interface{})["pricePerUnit"].(map[string]interface{})["USD"].(string)
+	priceUnit := priceDimensions.(map[string]interface{})[priceDimensionsKey].(map[string]interface{})["unit"].(string)
 
 	priceFloat, err := strconv.ParseFloat(price, 64)
 	if err != nil {
@@ -151,6 +178,7 @@ func extractPrice(resp *pricing.GetProductsOutput) ec2price {
 		"productCode":    productCode,
 		"priceDimension": priceDimensions,
 		"price":          price,
+		"len(keys)":      len(keys),
 	}).Info("getMonthlyPriceOfInstance")
 
 	return ec2price{priceFloat, priceUnit}
@@ -198,6 +226,16 @@ func getMonthlyPriceOfInstance(client *pricing.Pricing, machineType string, regi
 				Type:  aws.String("TERM_MATCH"),
 				Value: aws.String("Shared"),
 			},
+			// {
+			// 	Field: aws.String("operation"),
+			// 	Type:  aws.String("TERM_MATCH"),
+			// 	Value: aws.String("RunInstance"),
+			// },
+			{
+				Field: aws.String("capacitystatus"),
+				Type:  aws.String("TERM_MATCH"),
+				Value: aws.String("Used"),
+			},
 		},
 		FormatVersion: aws.String("aws_v1"),
 		MaxResults:    aws.Int64(10),
@@ -221,7 +259,7 @@ func getMonthlyPriceOfInstance(client *pricing.Pricing, machineType string, regi
 
 	// fmt.Printf("------------\npriceList: %#v\n\n", resp.PriceList)
 
-	// data, err := json.MarshalIndent(resp.PriceList, "", "\t")
+	// data, err := json.MarshalIndent(resp, "", "\t")
 	// if err != nil {
 	// 	log.Fatal(err)
 	// }
@@ -233,7 +271,11 @@ func getMonthlyPriceOfInstance(client *pricing.Pricing, machineType string, regi
 
 	price := extractPrice(resp)
 
-	pricePerMonth := getPricePerMonth(price)
+	pricePerMonth, err := getPricePerMonth(price)
+
+	if err != nil {
+		return 0 // TODO: we should return the err!
+	}
 
 	return pricePerMonth
 }

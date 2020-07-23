@@ -8,9 +8,10 @@ import (
 	"github.com/pipetail/cloudlint/pkg/check"
 	"github.com/pipetail/cloudlint/pkg/checkcompleted"
 	"github.com/pipetail/cloudlint/pkg/checkreportstarted"
+	ins "github.com/pipetail/cloudlint/pkg/inspection"
 	log "github.com/sirupsen/logrus"
 
-	"github.com/jedib0t/go-pretty/table"
+	"github.com/jedib0t/go-pretty/v6/table"
 )
 
 // Handle function
@@ -61,6 +62,7 @@ func Handle(filterChecks []string) check.Result {
 		if idx != -1 {
 			result.CheckResult[idx].Impact = item.Impact
 			result.CheckResult[idx].Severity = item.Severity
+			result.CheckResult[idx].Details = item.Details
 		}
 	}
 
@@ -81,8 +83,13 @@ func Print(res check.Result) {
 
 	t := table.NewWriter()
 	t.SetOutputMirror(os.Stdout)
-	t.AppendHeader(table.Row{"#", "Group", "Name", "Impact $", "Severity"})
+	t.AppendHeader(table.Row{"#", "Group", "Name", "Impact $", "Severity", ""})
 
+	t.SetColumnConfigs([]table.ColumnConfig{
+		{Number: 1, AutoMerge: true},
+		{Number: 2, AutoMerge: true},
+		{Number: 3, AutoMerge: true},
+	})
 	totalImpact := 0
 	billIdx := -1
 
@@ -94,6 +101,17 @@ func Print(res check.Result) {
 		}
 		t.AppendRow([]interface{}{res.CheckInfo[i].Type, res.CheckInfo[i].Group, res.CheckInfo[i].Name, result.Impact, checkcompleted.Severity(result.Severity)})
 		totalImpact += result.Impact
+
+		if ins.GetLevel() == ins.DETAIL && len(result.Details) > 0 {
+			t.AppendSeparator()
+			t.AppendRow(table.Row{res.CheckInfo[i].Type, res.CheckInfo[i].Group, "REGION", "NAME", "COST $", "SIZE"})
+			t.AppendSeparator()
+			for _, detail := range result.Details {
+				t.AppendRow(table.Row{res.CheckInfo[i].Type, res.CheckInfo[i].Group, detail.Region, detail.Name, detail.Cost, detail.Size})
+			}
+		}
+
+		t.AppendSeparator()
 	}
 
 	t.AppendFooter(table.Row{"", "", "Total impact", totalImpact})

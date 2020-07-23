@@ -1,6 +1,7 @@
 package worker
 
 import (
+	"fmt"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ec2"
@@ -30,10 +31,14 @@ func GetVolumesPrice(volumes []*ec2.Volume, client pricingiface.PricingAPI, regi
 
 		totalSize += *volume.Size
 
-		totalMonthlyPrice += float64(*volume.Size) * awspricing.GetPriceOfVolume(client, *volume.VolumeType, region)
+		totalMonthlyPrice += priceOfVolume(volume, client, region)
 	}
 
 	return totalMonthlyPrice
+}
+
+func priceOfVolume(volume *ec2.Volume, client pricingiface.PricingAPI, region string) float64 {
+	return float64(*volume.Size) * awspricing.GetPriceOfVolume(client, *volume.VolumeType, region)
 }
 
 func getVolumesWithinRegion(client ec2iface.EC2API) []*ec2.Volume {
@@ -76,6 +81,7 @@ func ebsunused(event check.Event) (*checkcompleted.Event, error) {
 	var totalMonthlyPrice float64 = 0
 
 	regions := awsregions.GetRegions()
+	details := make([]checkcompleted.Detail, 0)
 
 	// see https://godoc.org/github.com/aws/aws-sdk-go/service/ec2#Region
 	for _, region := range regions {
@@ -92,6 +98,7 @@ func ebsunused(event check.Event) (*checkcompleted.Event, error) {
 
 		// TODO: check if volumes.nextToken is nil
 		totalMonthlyPrice += GetVolumesPrice(detachedVolumes, pricingClient, region)
+		details = append(details, readDetail(detachedVolumes, pricingClient, region)...)
 	}
 
 	// TODO: make this relative to total spend
@@ -106,10 +113,25 @@ func ebsunused(event check.Event) (*checkcompleted.Event, error) {
 	// set check details
 	outputReport.Payload.Check.Severity = severity
 	outputReport.Payload.Check.Impact = int(totalMonthlyPrice)
+	outputReport.Payload.Check.Details = details
 
 	log.WithFields(log.Fields{
 		"checkCompleted": outputReport,
 	}).Info("EBS unused check finished")
 
 	return &outputReport, nil
+}
+
+func readDetail(volumes []*ec2.Volume, client pricingiface.PricingAPI, region string) []checkcompleted.Detail {
+	details := make([]checkcompleted.Detail, 0)
+
+	for _, volume := range volumes {
+		details = append(details, checkcompleted.Detail{
+			Region: region,
+			Name:   *volume.VolumeId,
+			Size:   fmt.Sprintf("%d GB", *volume.Size),
+			Cost:   fmt.Sprintf("%.2f", priceOfVolume(volume, client, region)),
+		})
+	}
+	return details
 }

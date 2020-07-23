@@ -73,12 +73,12 @@ func setLogLevel() {
 func setCheckLevel() {
     switch checkLevel {
     case "BASE":
-       ins.SetLevel(ins.Base)
+       ins.SetLevel(ins.BASE)
     case "DETAIL":
-        ins.SetLevel(ins.Detail)
+        ins.SetLevel(ins.DETAIL)
     default:
         log.WithField("check-level", checkLevel).Warning("Wrong check level set. Falling back to BASE")
-        ins.SetLevel(ins.Base)
+        ins.SetLevel(ins.BASE)
     }
 }
 

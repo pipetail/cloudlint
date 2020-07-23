@@ -2,20 +2,24 @@ package inspection
 
 import "sync/atomic"
 
+// Level basic structure to define level of inspection
 type Level uint32
 
+// Level iota
 const (
-    Base Level = iota
-    Detail
+    BASE   Level = iota // BASE == 0
+    DETAIL              // DETAIL == 1
 )
 
+// Inspection structure
 type Inspection struct {
     Level Level
 }
 
+// New creates new instance of Inspection structure
 func New() *Inspection {
     return &Inspection{
-        Level: Base,
+        Level: BASE,
     }
 }
 

@@ -61,7 +61,7 @@ type Check struct {
 // Detail struct
 type Detail struct {
 	Region string   `json:"name"`
-	Id     string   `json:"id"`
+	ID     string   `json:"id"`
 	Cost   string   `json:"cost"`
 	Size   string   `json:"size"`
 	Tags   []string `json:"tags"`

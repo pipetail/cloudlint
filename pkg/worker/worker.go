@@ -109,7 +109,7 @@ func Print(res check.Result) {
 			t.AppendRow(table.Row{res.CheckInfo[i].Type, "REGION", "ID", "COST [$]", "SIZE [GB]", "TAGS"})
 			t.AppendSeparator()
 			for _, detail := range result.Details {
-				t.AppendRow(table.Row{res.CheckInfo[i].Type, detail.Region, detail.Id, detail.Cost, detail.Size, strings.Join(detail.Tags, "; ")})
+				t.AppendRow(table.Row{res.CheckInfo[i].Type, detail.Region, detail.ID, detail.Cost, detail.Size, strings.Join(detail.Tags, "; ")})
 			}
 		}
 

@@ -128,7 +128,7 @@ func readDetail(volumes []*ec2.Volume, client pricingiface.PricingAPI, region st
 	for _, volume := range volumes {
 		details = append(details, checkcompleted.Detail{
 			Region: region,
-			Id:     *volume.VolumeId,
+			ID:     *volume.VolumeId,
 			Size:   fmt.Sprintf("%d", *volume.Size),
 			Cost:   fmt.Sprintf("%.2f", priceOfVolume(volume, client, region)),
 			Tags:   mapTags(volume.Tags),

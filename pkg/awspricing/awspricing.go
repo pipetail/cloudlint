@@ -194,7 +194,7 @@ func GetPriceOfVolume(client pricingiface.PricingAPI, volumeType string, region 
 		{
 			Field: aws.String("Location"),
 			Type:  aws.String("TERM_MATCH"),
-			Value: aws.String(utils.GetLocationForRegion(region)),
+			Value: aws.String("US East (N. Virginia)"),
 		},
 		{
 			Field: aws.String("volumeType"),

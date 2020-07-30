@@ -102,7 +102,7 @@ func Print(res check.Result) {
 		t.AppendRow([]interface{}{res.CheckInfo[i].Type, res.CheckInfo[i].Group, res.CheckInfo[i].Name, result.Impact, checkcompleted.Severity(result.Severity)})
 		totalImpact += result.Impact
 
-		if ins.GetLevel() == ins.DETAIL && len(result.Details) > 0 {
+		if ins.CheckDetail() && len(result.Details) > 0 {
 			t.AppendSeparator()
 			t.AppendRow(table.Row{res.CheckInfo[i].Type, "", "", "", "", ""})
 			t.AppendSeparator()

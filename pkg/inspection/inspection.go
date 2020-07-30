@@ -32,9 +32,9 @@ func SetLevel(level Level) {
     inspection.setLevel(level)
 }
 
-// GetLevel sets the standard logger level.
-func GetLevel() Level {
-    return inspection.getLevel()
+// CheckDetail is true if level of check is DETAIL.
+func CheckDetail() bool {
+    return inspection.getLevel() == DETAIL
 }
 
 func (logger *Inspection) setLevel(level Level) {

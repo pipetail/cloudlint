@@ -11,6 +11,7 @@ import (
 	"github.com/pipetail/cloudlint/pkg/awsregions"
 	"github.com/pipetail/cloudlint/pkg/check"
 	"github.com/pipetail/cloudlint/pkg/checkcompleted"
+	ins "github.com/pipetail/cloudlint/pkg/inspection"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -98,7 +99,9 @@ func ebsunused(event check.Event) (*checkcompleted.Event, error) {
 
 		// TODO: check if volumes.nextToken is nil
 		totalMonthlyPrice += GetVolumesPrice(detachedVolumes, pricingClient, region)
-		details = append(details, readDetail(detachedVolumes, pricingClient, region)...)
+		if ins.CheckDetail() {
+			details = append(details, readDetail(detachedVolumes, pricingClient, region)...)
+		}
 	}
 
 	// TODO: make this relative to total spend

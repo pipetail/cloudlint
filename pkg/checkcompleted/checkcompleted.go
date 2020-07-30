@@ -60,10 +60,11 @@ type Check struct {
 
 // Detail struct
 type Detail struct {
-	Region string  `json:"name"`
-	Name string  `json:"name"`
-	Cost string `json:"cost"`
-	Size string   `json:"size"`
+	Region string   `json:"name"`
+	Id     string   `json:"id"`
+	Cost   string   `json:"cost"`
+	Size   string   `json:"size"`
+	Tags   []string `json:"tags"`
 }
 
 // New constructs a CheckCompleted event

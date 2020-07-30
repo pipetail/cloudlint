@@ -2,6 +2,7 @@ package worker
 
 import (
 	"os"
+	"strings"
 	"sync"
 
 	"github.com/google/uuid"
@@ -83,12 +84,11 @@ func Print(res check.Result) {
 
 	t := table.NewWriter()
 	t.SetOutputMirror(os.Stdout)
-	t.AppendHeader(table.Row{"#", "Group", "Name", "Impact $", "Severity", ""})
+	t.AppendHeader(table.Row{"#", "Group", "Name", "Impact [$]", "Severity", ""})
 
 	t.SetColumnConfigs([]table.ColumnConfig{
 		{Number: 1, AutoMerge: true},
-		{Number: 2, AutoMerge: true},
-		{Number: 3, AutoMerge: true},
+		{Number: 6, WidthMax: 25},
 	})
 	totalImpact := 0
 	billIdx := -1
@@ -104,10 +104,12 @@ func Print(res check.Result) {
 
 		if ins.GetLevel() == ins.DETAIL && len(result.Details) > 0 {
 			t.AppendSeparator()
-			t.AppendRow(table.Row{res.CheckInfo[i].Type, res.CheckInfo[i].Group, "REGION", "NAME", "COST $", "SIZE"})
+			t.AppendRow(table.Row{res.CheckInfo[i].Type, "", "", "", "", ""})
+			t.AppendSeparator()
+			t.AppendRow(table.Row{res.CheckInfo[i].Type, "REGION", "ID", "COST [$]", "SIZE [GB]", "TAGS"})
 			t.AppendSeparator()
 			for _, detail := range result.Details {
-				t.AppendRow(table.Row{res.CheckInfo[i].Type, res.CheckInfo[i].Group, detail.Region, detail.Name, detail.Cost, detail.Size})
+				t.AppendRow(table.Row{res.CheckInfo[i].Type, detail.Region, detail.Id, detail.Cost, detail.Size, strings.Join(detail.Tags, "; ")})
 			}
 		}
 

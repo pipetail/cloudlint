@@ -123,15 +123,24 @@ func ebsunused(event check.Event) (*checkcompleted.Event, error) {
 }
 
 func readDetail(volumes []*ec2.Volume, client pricingiface.PricingAPI, region string) []checkcompleted.Detail {
-	details := make([]checkcompleted.Detail, 0)
+	details := make([]checkcompleted.Detail, 0, len(volumes))
 
 	for _, volume := range volumes {
 		details = append(details, checkcompleted.Detail{
 			Region: region,
-			Name:   *volume.VolumeId,
-			Size:   fmt.Sprintf("%d GB", *volume.Size),
+			Id:     *volume.VolumeId,
+			Size:   fmt.Sprintf("%d", *volume.Size),
 			Cost:   fmt.Sprintf("%.2f", priceOfVolume(volume, client, region)),
+			Tags:   mapTags(volume.Tags),
 		})
+	}
+	return details
+}
+
+func mapTags(tags []*ec2.Tag) []string {
+	details := make([]string, 0, len(tags))
+	for _, tag := range tags {
+		details = append(details, fmt.Sprintf("%s", *tag.Value))
 	}
 	return details
 }

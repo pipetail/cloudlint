@@ -143,7 +143,9 @@ func readDetail(volumes []*ec2.Volume, client pricingiface.PricingAPI, region st
 func mapTags(tags []*ec2.Tag) []string {
 	details := make([]string, 0, len(tags))
 	for _, tag := range tags {
-		details = append(details, fmt.Sprintf("%s", *tag.Value))
+		if *tag.Key == "Name" {
+			details = append(details, fmt.Sprintf("%s", *tag.Value))
+		}
 	}
 	return details
 }

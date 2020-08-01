@@ -244,7 +244,7 @@ func readInstancesDetail(instances []*ec2.Instance, client *pricing.Pricing, reg
 			ID:     *instance.InstanceId,
 			Size:   *instance.InstanceType,
 			Cost:   fmt.Sprintf("%.2f", instancePrice(client, instance, region)),
-			Tags:   []string{},
+			Tags:   mapTags(instance.Tags),
 		})
 	}
 	return details

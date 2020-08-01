@@ -88,7 +88,7 @@ func Print(res check.Result) {
 
 	t.SetColumnConfigs([]table.ColumnConfig{
 		{Number: 1, AutoMerge: true},
-		{Number: 6, WidthMax: 25},
+		{Number: 6, WidthMax: 45},
 	})
 	totalImpact := 0
 	billIdx := -1

@@ -106,10 +106,13 @@ func Print(res check.Result) {
 			t.AppendSeparator()
 			t.AppendRow(table.Row{res.CheckInfo[i].Type, "", "", "", "", ""})
 			t.AppendSeparator()
-			t.AppendRow(table.Row{res.CheckInfo[i].Type, "REGION", "ID", "COST [$]", "SIZE [GB]", "TAGS"})
+
+			header:= res.CheckInfo[i].DetailHeader
+
+			t.AppendRow(table.Row{res.CheckInfo[i].Type, header.Region, header.ID, header.Cost, header.Description, header.Tags})
 			t.AppendSeparator()
 			for _, detail := range result.Details {
-				t.AppendRow(table.Row{res.CheckInfo[i].Type, detail.Region, detail.ID, detail.Cost, detail.Size, strings.Join(detail.Tags, "; ")})
+				t.AppendRow(table.Row{res.CheckInfo[i].Type, detail.Region, detail.ID, detail.Cost, detail.Description, strings.Join(detail.Tags, "; ")})
 			}
 		}
 

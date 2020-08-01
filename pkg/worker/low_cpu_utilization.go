@@ -240,11 +240,11 @@ func readInstancesDetail(instances []*ec2.Instance, client *pricing.Pricing, reg
 
 	for _, instance := range instances {
 		details = append(details, checkcompleted.Detail{
-			Region: region,
-			ID:     *instance.InstanceId,
-			Size:   *instance.InstanceType,
-			Cost:   fmt.Sprintf("%.2f", instancePrice(client, instance, region)),
-			Tags:   mapTags(instance.Tags),
+			Region:      region,
+			ID:          *instance.InstanceId,
+			Description: *instance.InstanceType,
+			Cost:        fmt.Sprintf("%.2f", instancePrice(client, instance, region)),
+			Tags:        mapTags(instance.Tags),
 		})
 	}
 	return details

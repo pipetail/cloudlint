@@ -24,11 +24,21 @@ import (
 
 // Check struct with all the information we will show on the frontend
 type Check struct {
+	ID           string       `json:"id"`
+	Type         string       `json:"type"`
+	Group        string       `json:"group"`
+	Name         string       `json:"name"`
+	Description  string       `json:"description"`
+	DetailHeader DetailHeader `json:"detailHeader"`
+}
+
+// DetailHeader struct
+type DetailHeader struct {
+	Region      string `json:"name"`
 	ID          string `json:"id"`
-	Type        string `json:"type"`
-	Group       string `json:"group"`
-	Name        string `json:"name"`
+	Cost        string `json:"cost"`
 	Description string `json:"description"`
+	Tags        string `json:"tags"`
 }
 
 // GetChecks returns all the current checks we support
@@ -55,6 +65,13 @@ func GetChecks() []Check {
 			Group:       "Resources with no usage",
 			Type:        "total_ebs_unused",
 			Description: "Total unused EBS storage in GiB",
+			DetailHeader: DetailHeader{
+				Region:      "REGION",
+				ID:          "ID",
+				Cost:        "COST [$]",
+				Description: "SIZE [GB]",
+				Tags:        "TAGS",
+			},
 		},
 		{
 			ID:          uuid.New().String(),
@@ -118,6 +135,13 @@ func GetChecks() []Check {
 			Group:       "Incorrect service usage",
 			Type:        "lowcpuutilization",
 			Description: "Average CPU utilization of all EC2 instances is lower than 15%",
+			DetailHeader: DetailHeader{
+				Region:      "REGION",
+				ID:          "ID",
+				Cost:        "COST [$]",
+				Description: "INSTANCE TYPE",
+				Tags:        "TAGS",
+			},
 		},
 	}
 

@@ -158,6 +158,11 @@ func GetMonthlyPriceOfInstance(client pricingiface.PricingAPI, machineType strin
 			Type:  aws.String("TERM_MATCH"),
 			Value: aws.String(machineType),
 		},
+		// {
+		// 	Field: aws.String("termType"),
+		// 	Type:  aws.String("TERM_MATCH"),
+		// 	Value: aws.String("OnDemand"),
+		// },
 		{
 			Field: aws.String("operatingSystem"),
 			Type:  aws.String("TERM_MATCH"),

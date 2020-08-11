@@ -1,6 +1,7 @@
 package awspricing
 
 import (
+	"encoding/json"
 	"fmt"
 	"strconv"
 
@@ -35,15 +36,6 @@ func getPricePerMonth(price ec2price) (float64, error) {
 	}
 }
 
-func getSomeKey(m map[string]interface{}) string {
-
-	// return the first key you find, we don't care which is that
-	for k := range m {
-		return k
-	}
-	return ""
-}
-
 func extractPrice(resp *pricing.GetProductsOutput) ec2price {
 
 	// check if there is exactly one item in the PriceList
@@ -54,31 +46,39 @@ func extractPrice(resp *pricing.GetProductsOutput) ec2price {
 		panic(fmt.Sprintf("%v", resp.PriceList))
 	}
 
-	onDemand := resp.PriceList[0]["terms"].(map[string]interface{})["OnDemand"]
-
-	// we will use getSomeKey so that we don't have to use reflect
-	//keys := reflect.ValueOf(onDemand).MapKeys()
-	keys := onDemand.(map[string]interface{})
-
-	// check if we can extract only one product key
-	if len(keys) != 1 {
-		log.WithFields(log.Fields{
-			"len(keys)": len(keys),
-		}).Error("only one Product Key expected")
-		panic(fmt.Sprintf("%v", keys))
+	res := GetProductResponse{}
+	respJ, err := json.Marshal(resp)
+	if err != nil {
+		panic(fmt.Sprintf("could not parse input json: %s", err))
 	}
 
-	productCode := getSomeKey(keys)
+	err = json.Unmarshal(respJ, &res)
+	if err != nil {
+		panic(fmt.Sprintf("could not parse input json: %s", err))
+	}
 
-	priceDimensions := onDemand.(map[string]interface{})[productCode].(map[string]interface{})["priceDimensions"]
+	onDemand := res.PriceList[0].Terms.OnDemand
 
-	pcKeys := priceDimensions.(map[string]interface{})
+	// get first key
+	productCode := func(m map[string]Offering) string {
+		for k := range m {
+			return k
+		}
+		return ""
+	}(onDemand)
 
-	priceDimensionsKey := getSomeKey(pcKeys)
+	priceDimensions := onDemand[productCode].PriceDimensions
 
-	price := priceDimensions.(map[string]interface{})[priceDimensionsKey].(map[string]interface{})["pricePerUnit"].(map[string]interface{})["USD"].(string)
+	// get first key
+	priceDimensionsKey := func(m map[string]PriceDimension) string {
+		for k := range m {
+			return k
+		}
+		return ""
+	}(priceDimensions)
 
-	priceUnit := priceDimensions.(map[string]interface{})[priceDimensionsKey].(map[string]interface{})["unit"].(string)
+	price := priceDimensions[priceDimensionsKey].PricePerUnit.USD
+	priceUnit := priceDimensions[priceDimensionsKey].Unit
 
 	priceFloat, err := strconv.ParseFloat(price, 64)
 	if err != nil {
@@ -89,16 +89,13 @@ func extractPrice(resp *pricing.GetProductsOutput) ec2price {
 	}
 
 	log.WithFields(log.Fields{
-		"respSize": len(resp.PriceList),
-		// "resp":           resp.PriceList,
+		"respSize":       len(resp.PriceList),
 		"productCode":    productCode,
 		"priceDimension": priceDimensions,
 		"price":          price,
-		"len(keys)":      len(keys),
 	}).Info("getMonthlyPriceOfInstance")
 
 	return ec2price{priceFloat, priceUnit}
-
 }
 
 func getPrice(client pricingiface.PricingAPI, filters []*pricing.Filter) float64 {

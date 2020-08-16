@@ -55,6 +55,16 @@ type Check struct {
 	ID       string   `json:"id"`
 	Severity Severity `json:"severity"`
 	Impact   int      `json:"impact"`
+	Details  []Detail `json:"details"`
+}
+
+// Detail struct
+type Detail struct {
+	Region      string   `json:"name"`
+	ID          string   `json:"id"`
+	Cost        string   `json:"cost"`
+	Description string   `json:"size"`
+	Tags        []string `json:"tags"`
 }
 
 // New constructs a CheckCompleted event

@@ -1,6 +1,7 @@
 package worker
 
 import (
+	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/cloudwatch"
 	"github.com/aws/aws-sdk-go/service/ec2"
@@ -10,6 +11,7 @@ import (
 	"github.com/pipetail/cloudlint/pkg/awsregions"
 	"github.com/pipetail/cloudlint/pkg/check"
 	"github.com/pipetail/cloudlint/pkg/checkcompleted"
+	ins "github.com/pipetail/cloudlint/pkg/inspection"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -96,9 +98,8 @@ func getCPUUtilizationWithinRegion(client *cloudwatch.CloudWatch) *WeightedAvera
 	return result
 }
 
-func getEC2InstancesPriceWithinRegion(ec2client *ec2.EC2, pricingClient *pricing.Pricing, region string) float64 {
-
-	price := 0.0
+func getEC2Instances(ec2client *ec2.EC2) []*ec2.Instance {
+	instances := make([]*ec2.Instance, 0)
 
 	input := &ec2.DescribeInstancesInput{
 		Filters: []*ec2.Filter{
@@ -119,7 +120,7 @@ func getEC2InstancesPriceWithinRegion(ec2client *ec2.EC2, pricingClient *pricing
 		log.WithFields(log.Fields{
 			"err": err,
 		}).Error("checking getEC2InstancesPriceWithinRegion")
-		return 0
+		return instances
 	}
 
 	for idx, res := range resp.Reservations {
@@ -128,17 +129,29 @@ func getEC2InstancesPriceWithinRegion(ec2client *ec2.EC2, pricingClient *pricing
 			"ReservationId": *res.ReservationId,
 			"#Instances":    len(res.Instances),
 		}).Info("getEC2InstancesPriceWithinRegion")
+		instances = append(instances, resp.Reservations[idx].Instances...)
+	}
 
-		for _, inst := range resp.Reservations[idx].Instances {
+	return instances
+}
 
-			price += awspricing.GetMonthlyPriceOfInstance(pricingClient, *inst.InstanceType, region)
-			log.WithFields(log.Fields{
-				"InstanceId": *inst.InstanceId,
-			}).Info("getEC2InstancesPriceWithinRegion")
-		}
+func totalInstancesPriceWithinRegion(instances []*ec2.Instance, pricingClient *pricing.Pricing, region string) float64 {
+
+	price := 0.0
+
+	for _, inst := range instances {
+
+		price += instancePrice(pricingClient, inst, region)
+		log.WithFields(log.Fields{
+			"InstanceId": *inst.InstanceId,
+		}).Info("getEC2InstancesPriceWithinRegion")
 	}
 
 	return price
+}
+
+func instancePrice(pricingClient *pricing.Pricing, inst *ec2.Instance, region string) float64 {
+	return awspricing.GetMonthlyPriceOfInstance(pricingClient, *inst.InstanceType, region)
 }
 
 func lowcpuutilization(event check.Event) (*checkcompleted.Event, error) {
@@ -162,6 +175,7 @@ func lowcpuutilization(event check.Event) (*checkcompleted.Event, error) {
 	regions := awsregions.GetRegions()
 
 	pricingClient := NewPricingClient(auth)
+	details := make([]checkcompleted.Detail, 0)
 
 	// see https://godoc.org/github.com/aws/aws-sdk-go/service/ec2#Region
 	for _, region := range regions {
@@ -186,8 +200,14 @@ func lowcpuutilization(event check.Event) (*checkcompleted.Event, error) {
 		}
 
 		ec2client := NewEC2Client(auth, region)
-		totalMonthlyPrice += getEC2InstancesPriceWithinRegion(ec2client, pricingClient, region)
 
+		instances := getEC2Instances(ec2client)
+
+		totalMonthlyPrice += totalInstancesPriceWithinRegion(instances, pricingClient, region)
+
+		if ins.CheckDetail() {
+			details = append(details, readInstancesDetail(instances, pricingClient, region)...)
+		}
 		// count the price
 		// TODO: ec2 client to count the price for ec2
 		//totalMonthlyPrice += float64(eipCountWithinRegion) * getAddressPriceInRegion(region) * (24 * 30)
@@ -204,6 +224,8 @@ func lowcpuutilization(event check.Event) (*checkcompleted.Event, error) {
 	// impact is ( 100% minus percentageOfUtilization) * totalMonthlyPrice
 	outputReport.Payload.Check.Impact = int(totalMonthlyPrice * ((100 - wAvgTotal.Value) / 100))
 
+	outputReport.Payload.Check.Details = details
+
 	log.WithFields(log.Fields{
 		"checkCompleted":    outputReport,
 		"totalMonthlyPrice": totalMonthlyPrice,
@@ -211,4 +233,19 @@ func lowcpuutilization(event check.Event) (*checkcompleted.Event, error) {
 	}).Info("lowcpuutilization check finished")
 
 	return &outputReport, nil
+}
+
+func readInstancesDetail(instances []*ec2.Instance, client *pricing.Pricing, region string) []checkcompleted.Detail {
+	details := make([]checkcompleted.Detail, 0, len(instances))
+
+	for _, instance := range instances {
+		details = append(details, checkcompleted.Detail{
+			Region:      region,
+			ID:          *instance.InstanceId,
+			Description: *instance.InstanceType,
+			Cost:        fmt.Sprintf("%.2f", instancePrice(client, instance, region)),
+			Tags:        mapTags(instance.Tags),
+		})
+	}
+	return details
 }

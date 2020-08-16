@@ -1,9 +1,10 @@
 package main
 
 import (
-	"github.com/pipetail/cloudlint/pkg/worker"
-	log "github.com/sirupsen/logrus"
-	"github.com/spf13/cobra"
+    ins "github.com/pipetail/cloudlint/pkg/inspection"
+    "github.com/pipetail/cloudlint/pkg/worker"
+    log "github.com/sirupsen/logrus"
+    "github.com/spf13/cobra"
 )
 
 var (
@@ -11,11 +12,13 @@ var (
 	checkFilter  []string // list of checks we want to execute
 	regionFilter []string // list of regions we want to check
 	logLevel     string
+    checkLevel   string
 
 	// default values
 	checkFilterDefault  = []string{}
 	regionFilterDefault = []string{}
 	logLevelDefault     = "ERROR"
+    checkLevelDefault   = "BASE"
 
 	// commands
 	rootCmd = &cobra.Command{
@@ -38,6 +41,7 @@ func init() {
 	rootCmd.PersistentFlags().StringArrayVar(&checkFilter, "checks", checkFilterDefault, "list of checks you want to run against infrastructure")
 	rootCmd.PersistentFlags().StringArrayVar(&regionFilter, "regions", regionFilterDefault, "list of regions you want to run checks for")
 	rootCmd.PersistentFlags().StringVar(&logLevel, "log-level", logLevelDefault, "log level")
+    rootCmd.PersistentFlags().StringVar(&checkLevel, "check-level", checkLevelDefault, "level of a check")
 
 	// run command
 	rootCmd.AddCommand(runCmd)
@@ -66,6 +70,18 @@ func setLogLevel() {
 	}
 }
 
+func setCheckLevel() {
+    switch checkLevel {
+    case "BASE":
+       ins.SetLevel(ins.BASE)
+    case "DETAIL":
+        ins.SetLevel(ins.DETAIL)
+    default:
+        log.WithField("check-level", checkLevel).Warning("Wrong check level set. Falling back to BASE")
+        ins.SetLevel(ins.BASE)
+    }
+}
+
 func main() {
 	rootCmd.Execute()
 }
@@ -74,6 +90,7 @@ func run(cmd *cobra.Command, args []string) {
 
 	// set loglevel
 	setLogLevel()
+    setCheckLevel()
 
 	log.WithField("checks", checkFilter).Info("received list of checks")
 	result := worker.Handle(checkFilter)

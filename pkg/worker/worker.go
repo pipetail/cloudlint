@@ -2,15 +2,17 @@ package worker
 
 import (
 	"os"
+	"strings"
 	"sync"
 
 	"github.com/google/uuid"
 	"github.com/pipetail/cloudlint/pkg/check"
 	"github.com/pipetail/cloudlint/pkg/checkcompleted"
 	"github.com/pipetail/cloudlint/pkg/checkreportstarted"
+	ins "github.com/pipetail/cloudlint/pkg/inspection"
 	log "github.com/sirupsen/logrus"
 
-	"github.com/jedib0t/go-pretty/table"
+	"github.com/jedib0t/go-pretty/v6/table"
 )
 
 // Handle function
@@ -61,6 +63,7 @@ func Handle(filterChecks []string) check.Result {
 		if idx != -1 {
 			result.CheckResult[idx].Impact = item.Impact
 			result.CheckResult[idx].Severity = item.Severity
+			result.CheckResult[idx].Details = item.Details
 		}
 	}
 
@@ -81,8 +84,12 @@ func Print(res check.Result) {
 
 	t := table.NewWriter()
 	t.SetOutputMirror(os.Stdout)
-	t.AppendHeader(table.Row{"#", "Group", "Name", "Impact $", "Severity"})
+	t.AppendHeader(table.Row{"#", "Group", "Name", "Impact [$]", "Severity", ""})
 
+	t.SetColumnConfigs([]table.ColumnConfig{
+		{Number: 1, AutoMerge: true},
+		{Number: 6, WidthMax: 45},
+	})
 	totalImpact := 0
 	billIdx := -1
 
@@ -94,6 +101,24 @@ func Print(res check.Result) {
 		}
 		t.AppendRow([]interface{}{res.CheckInfo[i].Type, res.CheckInfo[i].Group, res.CheckInfo[i].Name, result.Impact, checkcompleted.Severity(result.Severity)})
 		totalImpact += result.Impact
+
+		if ins.CheckDetail() && len(result.Details) > 0 {
+			t.AppendSeparator()
+			t.AppendRow(table.Row{res.CheckInfo[i].Type, "", "", "", "", ""})
+			t.AppendSeparator()
+
+			header:= res.CheckInfo[i].DetailHeader
+
+			t.AppendRow(table.Row{res.CheckInfo[i].Type, header.Region, header.ID, header.Cost, header.Description, header.Tags})
+			t.AppendSeparator()
+			for _, detail := range result.Details {
+				t.AppendRow(table.Row{res.CheckInfo[i].Type, detail.Region, detail.ID, detail.Cost, detail.Description, strings.Join(detail.Tags, "; ")})
+			}
+			t.AppendSeparator()
+			t.AppendRow(table.Row{res.CheckInfo[i].Type, "", "", "", "", ""})
+		}
+
+		t.AppendSeparator()
 	}
 
 	t.AppendFooter(table.Row{"", "", "Total impact", totalImpact})

@@ -1,5 +1,7 @@
 # cloudlint
 ----
+IMPORTANT NOTE: cloudlint is archived, we gave up all the effort on this project, we have failed 
+----
 
 cloudlint is an open source system for checking AWS configuration. It provides basic visibility into cloud spend, performance and security.
 
